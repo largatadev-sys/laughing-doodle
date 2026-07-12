@@ -3,8 +3,8 @@
 Bootstraps the backend: local Postgres with the Flyway schema migration (full constraint
 set, verified by tests that attempt to violate the constraints), and a DB-readiness
 health endpoint on top. Source:
-[docs/plans/story-1-walking-skeleton.md](docs/plans/story-1-walking-skeleton.md), itself
-elaborated from [docs/design/07-epic-map.md](docs/design/07-epic-map.md) Story 1 via a
+[docs/plans/story-1-walking-skeleton.md](../plans/story-1-walking-skeleton.md), itself
+elaborated from [docs/design/07-epic-map.md](../design/07-epic-map.md) Story 1 via a
 `/grilling` session.
 
 Work the **frontier**: any ticket whose blockers are all done. This chain is linear —
