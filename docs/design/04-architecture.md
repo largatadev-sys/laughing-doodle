@@ -80,11 +80,11 @@ Mode dial: this is an internal/learning build, so the three-environment pipeline
 **ADR-002 — Roll-your-own auth: Spring Security + BCrypt + JWT.**
 - *Context.* 4 trusted internal users; developer wants to learn Spring Security; client is
   web + native from one codebase.
-- *Decision.* Email/password login → BCrypt-verified → signed JWT (~7-day TTL) in the
+- *Decision.* Username/password login → BCrypt-verified → signed JWT (~7-day TTL) in the
   `Authorization` header. **No self-service reset** (admin resets in DB), **no lockout**.
 - *Alternatives rejected.* OAuth/identity provider — less code in the abstract, but its
   browser-redirect flow differs per Expo platform (web vs native), and adds an external
-  dependency; email/password is one uniform HTTP call across both targets.
+  dependency; username/password is one uniform HTTP call across both targets.
 - *Assumption.* Few trusted users; instant token revocation isn't needed; long-lived
   token is acceptable.
 - *Invalidates it.* User base grows / external users / a need to revoke a token before it

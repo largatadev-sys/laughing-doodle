@@ -26,7 +26,7 @@ ends at "recorded and visible," not "approved."
 
 ## Entities
 
-- **User** — `id · name · email (unique, = login id) · password_hash (BCrypt) ·
+- **User** — `id · name · username (unique, = login id) · password_hash (BCrypt) ·
   role (member|admin) · created_at`. Purpose: an authenticatable person and the author
   of entries.
 - **TimeEntry** — `id · user_id →User · entry_date · duration_min (int, >0) ·
@@ -53,7 +53,8 @@ ends at "recorded and visible," not "approved."
 - **INV-3** `duration_min > 0` (a zero/negative chunk of work is meaningless).
 - **INV-4** `entry_date` and `created_at` are independent. People log Friday's work on
   Monday; conflating them corrupts the shared feed's grouping.
-- **INV-5** `email` is unique across users (it is the login identifier).
+- **INV-5** `username` is unique across users, case-insensitively (it is the login
+  identifier).
 
 ## State machines
 

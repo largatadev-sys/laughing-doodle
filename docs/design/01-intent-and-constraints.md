@@ -48,5 +48,5 @@ person per day. Data volume trivial for years. Orders of magnitude: 10¹ users, 
 - Availability — best-effort (a small internal tool; brief downtime is fine).
 - Latency — non-critical; anything sub-second is ample at this volume.
 - Consistency — **strong**, trivially: single Postgres, single node, no replication.
-- Compliance — none (no external users, no regulated data; treat emails/passwords with
+- Compliance — none (no external users, no regulated data; treat usernames/passwords with
   ordinary care — hashing + HTTPS).

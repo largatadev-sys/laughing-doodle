@@ -8,8 +8,11 @@ for this system.
 ---
 
 **Stack.**
-- Backend: **Java 21 + Spring Boot 3.x**, Gradle. Spring Web, Spring Security, Spring Data
-  JPA, Flyway (migrations), PostgreSQL driver.
+- Backend: **Java 25 + Spring Boot 4.1.0** (bumped during Story 1 from this doc's original
+  Java 21 / SB 3.x — no JDK 21 available locally, and the SB 3→4 major move was taken
+  deliberately while the codebase was still small; see BUILD_STATUS off-epic ledger and
+  CLAUDE.md gotchas for the concrete breaking-change list), Gradle 9.6.1. Spring Web(MVC),
+  Spring Security, Spring Data JPA, Flyway (migrations), PostgreSQL driver.
 - DB: **PostgreSQL** (containerised locally; managed in prod).
 - Client: **Expo (React Native)**, TypeScript, targeting web (real tool) + native (practice).
 
@@ -22,7 +25,7 @@ authorization enforcement path. Everything else stays at Floor — this is a sid
 - `UNAUTHENTICATED` → 401 (missing/invalid/expired token)
 - `FORBIDDEN` → 403 (authenticated but not the owner — INV-2 violation)
 - `NOT_FOUND` → 404
-- `CONFLICT` → 409 (e.g. duplicate email on user create)
+- `CONFLICT` → 409 (e.g. duplicate username on user create)
 - `INTERNAL` → 500 (unexpected; message generic, real cause logged once server-side)
 
 **Exception model.** A small typed hierarchy (`AppException` → `ValidationException`,
