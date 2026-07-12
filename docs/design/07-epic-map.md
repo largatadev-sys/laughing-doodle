@@ -19,24 +19,38 @@ explicit **scope boundary**, and **fits one context window**.
 
 - **Context anchor.** Epic *Log & see team time* · bootstraps the whole backend · no prior patterns (first story).
 - **Vertical slice.** Spring Boot app boots → connects to Postgres (containerised locally)
-  → Flyway migration creates `users` and `time_entries` → `GET /api/health` returns 200.
+  → Flyway migration creates `users` and `time_entries` → `GET /api/health` pings the DB
+  and returns 200.
 - **Acceptance criteria (= tests).**
-  - AC-1 App starts and `GET /api/health` → `200 {"status":"ok"}`.
-  - AC-2 Flyway migration creates both tables with the columns from [02](02-domain-model.md)
-    (incl. `duration_min > 0` check, `email` unique).
-  - AC-3 `docker compose up` brings up Postgres; app connects via `DATABASE_URL`.
-- **Scope boundary — do NOT touch.** No auth, no entry/user endpoints, no client.
+  - AC-1 App starts and `GET /api/health` → `200 {"status":"ok"}` (endpoint does a live
+    `SELECT 1`, proving DB connectivity, not just that the process is up).
+  - AC-2 Flyway migration creates both tables with the columns from [02](02-domain-model.md):
+    `bigint` identity PKs; `users.username varchar(50) NOT NULL` with a unique index on
+    `lower(username)`, forced lowercase on write; `users.role varchar(20) NOT NULL CHECK
+    (role IN ('member','admin'))`; `time_entries.duration_min integer NOT NULL CHECK
+    (duration_min > 0)` (no upper bound); `time_entries.description varchar(500) NOT NULL`;
+    `entry_date date NOT NULL`; `created_at`/`updated_at timestamptz NOT NULL DEFAULT now()`.
+  - AC-3 `docker compose up` brings up Postgres (`postgres:18-alpine`, pinned); app connects
+    via `DATABASE_URL`.
+- **Scope boundary — do NOT touch.** No auth, no entry/user endpoints, no client, no JPA
+  `@Entity` classes (Flyway + `JdbcTemplate` only — entities are written in Stories 2/3
+  against this migration). No `email` column — login identifier is `username` (see
+  [02](02-domain-model.md) INV-5).
+- **Test infra.** Testcontainers (real ephemeral Postgres, matching the pinned local/CI
+  version); one integration test class asserting app boot, `/api/health` → `200`, and that
+  the `duration_min > 0` and unique-`lower(username)` constraints actually reject bad
+  inserts via raw JDBC.
 - **Fits one window?** Yes.
 
 ### Story 2 — Auth: login + JWT filter + seeded users
 
 - **Context anchor.** Follows [04](04-architecture.md) ADR-002, [06b](06b-engineering-decisions.md) auth model.
-- **Vertical slice.** `POST /api/auth/login` verifies email + BCrypt password → returns a
+- **Vertical slice.** `POST /api/auth/login` verifies username + BCrypt password → returns a
   signed JWT + user; a Spring Security filter validates the bearer token on all other
   routes and populates the security context. Seed the 4 users (one admin) via migration/seeder.
 - **Acceptance criteria (= tests).**
-  - AC-1 Valid credentials → `200 {token, user{id,name,email,role}}`.
-  - AC-2 Wrong password / unknown email → `401 UNAUTHENTICATED` (envelope shape).
+  - AC-1 Valid credentials → `200 {token, user{id,name,username,role}}`.
+  - AC-2 Wrong password / unknown username → `401 UNAUTHENTICATED` (envelope shape).
   - AC-3 A request to a protected route with no/invalid/expired token → `401`.
   - AC-4 Passwords are stored BCrypt-hashed; never returned in any response; never logged.
 - **Scope boundary — do NOT touch.** No entry endpoints; no self-service reset; no lockout.

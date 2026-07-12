@@ -22,7 +22,7 @@ authorization enforcement path. Everything else stays at Floor — this is a sid
 - `UNAUTHENTICATED` → 401 (missing/invalid/expired token)
 - `FORBIDDEN` → 403 (authenticated but not the owner — INV-2 violation)
 - `NOT_FOUND` → 404
-- `CONFLICT` → 409 (e.g. duplicate email on user create)
+- `CONFLICT` → 409 (e.g. duplicate username on user create)
 - `INTERNAL` → 500 (unexpected; message generic, real cause logged once server-side)
 
 **Exception model.** A small typed hierarchy (`AppException` → `ValidationException`,
