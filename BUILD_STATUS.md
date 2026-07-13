@@ -26,7 +26,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 6 | Delete own entry (ownership enforced) | ✅ | [plan](docs/plans/story-6-delete-own-entry.md) | `6908804` |
 | 7a | Expo client: scaffold + login + my-entries list | ✅ | [plan](docs/plans/story-7a-expo-scaffold-login-list.md) | `af9fdee` |
 | 7b | Expo client: create/edit/delete my entries | ✅ | [plan](docs/plans/story-7b-expo-create-edit-delete.md) | `d74452d` |
-| 8 | Team feed (shared visibility view) | ⬜ | — | — |
+| 8 | Team feed (shared visibility view) | ✅ | [plan](docs/plans/story-8-team-feed.md) | — |
 | 9 | Deploy to prod (skeleton goes live) | ⬜ | — | — |
 
 *(Deploy story 9 may be pulled forward after story 3 for an early thin skeleton — see 07.)*

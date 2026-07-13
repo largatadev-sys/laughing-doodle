@@ -1,32 +1,12 @@
 import { useCallback, useState } from 'react';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { EntryRow } from '@/components/EntryRow';
 import { apiClient, UnauthorizedError } from '@/lib/apiClient';
 import { useAuth } from '@/lib/auth';
+import { confirmDelete } from '@/lib/confirm';
 import type { EntryResponse } from '@/lib/types';
-
-function confirmDelete(): Promise<boolean> {
-  const message = 'Delete this entry? This cannot be undone.';
-  if (Platform.OS === 'web') {
-    return Promise.resolve(window.confirm(message));
-  }
-  return new Promise((resolve) => {
-    Alert.alert('Delete entry', message, [
-      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
-    ]);
-  });
-}
 
 export default function MyEntries() {
   const { session, logout } = useAuth();
@@ -103,6 +83,16 @@ export default function MyEntries() {
             <Text style={styles.newLink}>+ New</Text>
           </Pressable>
         ),
+        headerRight: () => (
+          <View style={styles.headerRight}>
+            <Pressable onPress={() => router.push('/team')} hitSlop={8}>
+              <Text style={styles.newLink}>Team</Text>
+            </Pressable>
+            <Pressable onPress={() => logout()} hitSlop={8}>
+              <Text style={styles.newLink}>Log out</Text>
+            </Pressable>
+          </View>
+        ),
       }}
     />
   );
@@ -138,21 +128,12 @@ export default function MyEntries() {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.date}>{item.entryDate}</Text>
-            <Text style={styles.duration}>{item.durationMin} min</Text>
-            <Text style={styles.description}>{item.description}</Text>
-            {item.userId === session?.user.id && (
-              <View style={styles.actions}>
-                <Pressable onPress={() => goToEdit(item)} hitSlop={8}>
-                  <Text style={styles.actionLink}>Edit</Text>
-                </Pressable>
-                <Pressable onPress={() => handleDelete(item)} hitSlop={8}>
-                  <Text style={styles.actionLinkDestructive}>Delete</Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
+          <EntryRow
+            entry={item}
+            currentUserId={session?.user.id}
+            onEdit={goToEdit}
+            onDelete={handleDelete}
+          />
         )}
       />
     </>
@@ -173,37 +154,12 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  row: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    padding: 12,
-    gap: 4,
-  },
-  date: {
-    fontWeight: '600',
-  },
-  duration: {
-    color: '#374151',
-  },
-  description: {
-    color: '#111827',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 8,
-  },
-  actionLink: {
-    color: '#1d4ed8',
-    fontWeight: '600',
-  },
-  actionLinkDestructive: {
-    color: '#b91c1c',
-    fontWeight: '600',
-  },
   newLink: {
     color: '#1d4ed8',
     fontWeight: '600',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 16,
   },
 });
