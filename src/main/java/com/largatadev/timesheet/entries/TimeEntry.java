@@ -76,4 +76,11 @@ public class TimeEntry {
 	public OffsetDateTime getUpdatedAt() {
 		return updatedAt;
 	}
+
+	public void update(LocalDate entryDate, Integer durationMin, String description, OffsetDateTime updatedAt) {
+		this.entryDate = entryDate;
+		this.durationMin = durationMin;
+		this.description = description;
+		this.updatedAt = updatedAt;
+	}
 }

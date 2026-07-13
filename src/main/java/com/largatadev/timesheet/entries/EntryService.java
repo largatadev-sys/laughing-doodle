@@ -1,5 +1,7 @@
 package com.largatadev.timesheet.entries;
 
+import com.largatadev.timesheet.error.ForbiddenException;
+import com.largatadev.timesheet.error.NotFoundException;
 import com.largatadev.timesheet.error.ValidationException;
 import com.largatadev.timesheet.users.User;
 import com.largatadev.timesheet.users.UserRepository;
@@ -24,7 +26,7 @@ public class EntryService {
 	}
 
 	public EntryResponse create(Long userId, CreateEntryRequest request) {
-		validate(request);
+		validate(request.entryDate(), request.durationMin(), request.description());
 
 		OffsetDateTime now = OffsetDateTime.now();
 		TimeEntry entry = new TimeEntry(
@@ -41,6 +43,23 @@ public class EntryService {
 		return EntryResponse.of(saved, author.getName());
 	}
 
+	public EntryResponse update(Long id, Long callerId, UpdateEntryRequest request) {
+		TimeEntry entry = timeEntryRepository.findById(id)
+				.orElseThrow(() -> new NotFoundException("Entry not found"));
+
+		if (!entry.getUserId().equals(callerId)) {
+			throw new ForbiddenException("Only the author may edit this entry");
+		}
+
+		validate(request.entryDate(), request.durationMin(), request.description());
+
+		entry.update(request.entryDate(), request.durationMin(), request.description(), OffsetDateTime.now());
+		TimeEntry saved = timeEntryRepository.save(entry);
+
+		User author = userRepository.findById(callerId).orElseThrow();
+		return EntryResponse.of(saved, author.getName());
+	}
+
 	public List<EntryResponse> list(LocalDate from, LocalDate to, Long userId) {
 		List<TimeEntry> entries = timeEntryRepository.findByFilters(from, to, userId);
 
@@ -54,16 +73,16 @@ public class EntryService {
 				.toList();
 	}
 
-	private void validate(CreateEntryRequest request) {
+	private void validate(LocalDate entryDate, Integer durationMin, String description) {
 		Map<String, Object> details = new HashMap<>();
 
-		if (request.entryDate() == null) {
+		if (entryDate == null) {
 			details.put("entryDate", "is required");
 		}
-		if (request.durationMin() == null || request.durationMin() <= 0) {
+		if (durationMin == null || durationMin <= 0) {
 			details.put("durationMin", "must be greater than 0");
 		}
-		if (request.description() == null || request.description().isBlank()) {
+		if (description == null || description.isBlank()) {
 			details.put("description", "is required");
 		}
 
