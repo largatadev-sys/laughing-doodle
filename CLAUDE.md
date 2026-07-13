@@ -68,6 +68,11 @@ kept anyway at the developer's explicit choice, as a standing staging checkpoint
 a future second contributor or deploy pipeline. Revisit if `dev` never ends up catching
 anything `main` wouldn't have caught directly.
 
+**Merging a feature branch into `dev` is always a squash merge** (`git merge --squash`),
+not a `--no-ff` merge commit — `dev`'s log should carry one commit per story, not every
+intermediate commit from the feature branch. Write the squash commit message fresh
+(don't just concatenate the feature branch's commit messages).
+
 Commit convention: `feat(scope): …` / `fix(scope): …`.
 
 ## Branches vs. worktrees
