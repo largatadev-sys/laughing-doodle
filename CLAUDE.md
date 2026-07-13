@@ -73,6 +73,12 @@ not a `--no-ff` merge commit — `dev`'s log should carry one commit per story, 
 intermediate commit from the feature branch. Write the squash commit message fresh
 (don't just concatenate the feature branch's commit messages).
 
+**Doc updates belong on the feature branch too, squashed in with the rest** — plans,
+tickets, and BUILD_STATUS edits are not exempt from this. The one unavoidable exception is
+BUILD_STATUS's own commit-SHA reference: it can only name the squash commit's SHA once
+that commit exists, so fixing that specific line directly on `dev` right after the squash
+is the sole doc edit allowed to land there instead of on the branch.
+
 Commit convention: `feat(scope): …` / `fix(scope): …`.
 
 ## Branches vs. worktrees
