@@ -60,6 +60,15 @@ public class EntryService {
 		return EntryResponse.of(saved, author.getName());
 	}
 
+	public void delete(Long id, Long callerId) {
+		timeEntryRepository.findById(id).ifPresent(entry -> {
+			if (!entry.getUserId().equals(callerId)) {
+				throw new ForbiddenException("Only the author may delete this entry");
+			}
+			timeEntryRepository.delete(entry);
+		});
+	}
+
 	public List<EntryResponse> list(LocalDate from, LocalDate to, Long userId) {
 		List<TimeEntry> entries = timeEntryRepository.findByFilters(from, to, userId);
 
