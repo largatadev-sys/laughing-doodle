@@ -172,4 +172,36 @@ class EntryServiceTest {
 
 		verify(timeEntryRepository, never()).save(any());
 	}
+
+	@Test
+	void authorDeletingOwnEntryDeletesIt() {
+		TimeEntry existing = new TimeEntry(1L, LocalDate.of(2026, 7, 1), 60, "Original work",
+				OffsetDateTime.now(), OffsetDateTime.now());
+		when(timeEntryRepository.findById(10L)).thenReturn(Optional.of(existing));
+
+		entryService.delete(10L, 1L);
+
+		verify(timeEntryRepository).delete(existing);
+	}
+
+	@Test
+	void differentUserDeletingSomeoneElsesEntryThrowsForbiddenAndNeverDeletes() {
+		TimeEntry existing = new TimeEntry(1L, LocalDate.of(2026, 7, 1), 60, "Original work",
+				OffsetDateTime.now(), OffsetDateTime.now());
+		when(timeEntryRepository.findById(10L)).thenReturn(Optional.of(existing));
+
+		assertThatThrownBy(() -> entryService.delete(10L, 2L))
+				.isInstanceOf(ForbiddenException.class);
+
+		verify(timeEntryRepository, never()).delete(any(TimeEntry.class));
+	}
+
+	@Test
+	void unknownIdOnDeleteIsANoOpAndNeverDeletes() {
+		when(timeEntryRepository.findById(10L)).thenReturn(Optional.empty());
+
+		entryService.delete(10L, 1L);
+
+		verify(timeEntryRepository, never()).delete(any(TimeEntry.class));
+	}
 }
