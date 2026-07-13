@@ -1,12 +1,13 @@
 import { createContext, use, useEffect, useState, type PropsWithChildren } from 'react';
 
 import { apiClient } from './apiClient';
-import { loadSession, saveSession, type StoredSession } from './tokenStorage';
+import { clearSession, loadSession, saveSession, type StoredSession } from './tokenStorage';
 
 interface AuthContextValue {
   session: StoredSession | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -37,5 +38,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setSession(newSession);
   }
 
-  return <AuthContext value={{ session, isLoading, login }}>{children}</AuthContext>;
+  async function logout() {
+    await clearSession();
+    setSession(null);
+  }
+
+  return <AuthContext value={{ session, isLoading, login, logout }}>{children}</AuthContext>;
 }

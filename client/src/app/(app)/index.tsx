@@ -2,12 +2,12 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 
-import { apiClient } from '@/lib/apiClient';
+import { apiClient, UnauthorizedError } from '@/lib/apiClient';
 import { useAuth } from '@/lib/auth';
 import type { EntryResponse } from '@/lib/types';
 
 export default function MyEntries() {
-  const { session } = useAuth();
+  const { session, logout } = useAuth();
   const [entries, setEntries] = useState<EntryResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,14 +26,22 @@ export default function MyEntries() {
           }
         })
         .catch((e: unknown) => {
-          if (!cancelled) {
-            setError(e instanceof Error ? e.message : 'Failed to load entries.');
+          if (cancelled) {
+            return;
           }
+          // An expired/invalid token: end the session and let the root layout's
+          // Stack.Protected guard redirect to /login, instead of showing an error
+          // the user has no way to act on.
+          if (e instanceof UnauthorizedError) {
+            logout();
+            return;
+          }
+          setError(e instanceof Error ? e.message : 'Failed to load entries.');
         });
       return () => {
         cancelled = true;
       };
-    }, [session]),
+    }, [session, logout]),
   );
 
   if (error) {
