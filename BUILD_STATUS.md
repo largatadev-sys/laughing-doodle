@@ -22,7 +22,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 2 | Auth: login + JWT filter + seeded users | ✅ | [plan](docs/plans/story-2-auth.md) | `facf891` |
 | 3 | Create a time entry | ✅ | [plan](docs/plans/story-3-create-time-entry.md) | `c784b16` |
 | 4 | List entries (shared read, filterable) | ✅ | [plan](docs/plans/story-4-list-entries.md) | `aa14ade` |
-| 5 | Edit own entry (ownership enforced) | ⬜ | [plan](docs/plans/story-5-edit-own-entry.md) | — |
+| 5 | Edit own entry (ownership enforced) | ✅ | [plan](docs/plans/story-5-edit-own-entry.md) | `b046a75` |
 | 6 | Delete own entry (ownership enforced) | ⬜ | — | — |
 | 7 | Expo client: login → my entries → CRUD | ⬜ | — | — |
 | 8 | Team feed (shared visibility view) | ⬜ | — | — |
