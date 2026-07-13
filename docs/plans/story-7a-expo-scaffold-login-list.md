@@ -159,3 +159,26 @@ No create/edit/delete UI yet — that's Story 7b.
 Create/edit/delete UI (Story 7b), team-feed grouping (Story 8), offline support,
 pagination, any automated e2e/UI test suite, native app store distribution, any change to
 backend endpoints or DTOs.
+
+## Implementation notes (added post-build, plan text above left as originally written)
+
+- **Route path deviation from the Deliverables list above.** The my-entries screen landed
+  at `(app)/index.tsx` (route `/`), not `app/entries/index.tsx` (route `/entries`) as
+  originally written. While implementing, reading Expo Router's current docs (per this
+  repo's own `client/AGENTS.md` warning to check versioned docs, not assume) surfaced its
+  documented `Stack.Protected` auth-gating pattern, which groups protected routes under a
+  named group (its own example uses `(app)`) rather than gating individual screens
+  in-place. Adopting that pattern made the group's index route the natural home for the
+  one authenticated screen this story has; `/entries` was never load-bearing for anything
+  else (no ticket AC names the URL). Story 7b's new screens will live alongside it under
+  the same `(app)` group.
+- **Backend CORS gap, not anticipated by this plan.** Live-testing ticket 02 in a real
+  browser (not `curl`, which doesn't enforce CORS) showed the backend had no
+  `Access-Control-Allow-Origin` handling at all, categorically blocking every request from
+  the web client. Fixed on this branch (`SecurityConfig.java` +
+  `CORS_ALLOWED_ORIGINS` env var, default `http://localhost:*`) after checking with the
+  developer, since it touches the auth config file — see BUILD_STATUS's off-epic ledger
+  for the full entry.
+- **`Role` is `'MEMBER' | 'ADMIN'`** (the Java enum's serialized form), not the lowercase
+  `member`/`admin` decision 9's prose implied by paraphrasing the domain-model glossary —
+  corrected in `client/src/lib/types.ts` after live-testing surfaced the mismatch.
