@@ -27,9 +27,14 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 7a | Expo client: scaffold + login + my-entries list | ✅ | [plan](docs/plans/story-7a-expo-scaffold-login-list.md) | `af9fdee` |
 | 7b | Expo client: create/edit/delete my entries | ✅ | [plan](docs/plans/story-7b-expo-create-edit-delete.md) | `d74452d` |
 | 8 | Team feed (shared visibility view) | ✅ | [plan](docs/plans/story-8-team-feed.md) | `e761bf6` |
-| 9 | Deploy to prod (skeleton goes live) | 🔄 | [plan](docs/plans/story-9-deploy.md) | `4e1c776` (Phase 1) |
+| 9 | Deploy to prod (skeleton goes live) | ✅ | [plan](docs/plans/story-9-deploy.md) | `1f1c700` |
 
 *(Deploy story 9 may be pulled forward after story 3 for an early thin skeleton — see 07.)*
+
+**🟢 Live (prod):** <https://laughing-doodle-production.up.railway.app> — Railway, single-origin
+bundled image (Expo web + Spring API) + managed Postgres, HTTPS (ADR-008). MVP epic complete
+end-to-end. Deploy runbook: [docs/deploy/railway.md](docs/deploy/railway.md); pre/post-deploy
+check: `scripts/smoke.sh`.
 
 ## Off-epic ledger
 

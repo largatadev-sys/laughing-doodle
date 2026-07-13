@@ -126,3 +126,14 @@ into the worktree; remove the worktree once its branch merges into `dev`.
   `DATABASE_PORT` (default 5432) to dodge conflicts with other local stacks.
 - **No local JDK 21**; only 17 & 25 installed, and `gradle`/`sdk` aren't on PATH — use
   `./gradlew` (wrapper is Gradle 9.6.1, runs on Java 25).
+- **Spring behind a TLS-terminating proxy (prod, Railway): set
+  `server.forward-headers-strategy=framework`.** The proxy forwards over http; browsers send
+  an `Origin` header on same-origin POSTs; without honoring `X-Forwarded-Proto` Spring sees its
+  own scheme as http vs the https `Origin` and rejects the *same-origin* login as
+  `403 "Invalid CORS request"`. **Invisible to the local gate** (no proxy → scheme always
+  matches) — the classic "only the real deploy surfaces it." `scripts/smoke.sh` now *simulates*
+  the proxy (`Origin: https` + `X-Forwarded-Proto: https`); run it against the gate before every
+  deploy and against the URL after (`scripts/smoke.sh <url>`). Story 9 / ADR-008.
+- **`gradlew` is committed as LF but Windows `autocrlf` checks it out CRLF** — the CRLF shebang
+  breaks it inside the Docker build (`exit 127`). `.gitattributes` pins LF and the `Dockerfile`
+  strips `\r` as a backstop.
