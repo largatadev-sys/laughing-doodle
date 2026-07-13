@@ -21,6 +21,24 @@ in the context package below; this file only _points_ at it. Keep under ~2 pages
   row (status + commit); every unplanned change gets a line in the off-epic ledger.
   A stale tracker misleads the next session with authority — keeping it current is **non-negotiable**.
 
+## Agent skills
+
+### Issue tracker
+
+Local markdown under `docs/tickets/<feature-slug>/issues/`, not GitHub Issues despite the
+`origin` remote. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
+
+### Triage labels
+
+Defaults kept as-is (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`,
+`wontfix`), recorded as a `Status:` line per ticket. See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
+
+### Domain docs
+
+Single-context; the existing `docs/design/` package (02-domain-model.md, 04-architecture.md's
+ADR log) stands in for the generic `CONTEXT.md`/`docs/adr/` layout — no parallel structure.
+See [docs/agents/domain.md](docs/agents/domain.md).
+
 ## Stop rules (ask before doing)
 
 Ask the developer before: schema/migration changes · anything touching auth or the JWT
