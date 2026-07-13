@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 
@@ -29,6 +30,14 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status())
 				.body(ErrorEnvelope.of(ErrorCode.VALIDATION_FAILED, "Invalid query parameter",
 						Map.of(paramName, "could not be parsed")));
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ErrorEnvelope> handleNoResource(NoResourceFoundException ex) {
+		// A missing static file (e.g. an unknown asset under the SPA's static/ root). Routine —
+		// don't log as an error; return a clean 404 instead of the catch-all's 500. See ADR-008.
+		return ResponseEntity.status(ErrorCode.NOT_FOUND.status())
+				.body(ErrorEnvelope.of(ErrorCode.NOT_FOUND, "Resource not found."));
 	}
 
 	@ExceptionHandler(Exception.class)

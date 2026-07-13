@@ -15,5 +15,28 @@ services:
       timeout: 5s
       retries: 10
 
+  # The full-stack parity gate (ADR-008): the bundled prod image (Expo web + Spring API on
+  # one origin) — the exact artifact Railway runs. Hidden behind a profile so the daily-loop
+  # `docker compose up postgres` is untouched. Run the gate with:
+  #   docker compose --profile fullstack up --build
+  # then open http://localhost:8080 (the web app is served by Spring, not the Expo dev server).
+  app:
+    profiles: ["fullstack"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # Inside the compose network the DB is reached by service name, not localhost.
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${DATABASE_NAME:-timesheet}
+      DATABASE_USER: ${DATABASE_USER:-timesheet}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-changeme}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-placeholder-secret-not-for-prod-use-change-me}
+      JWT_TTL_DAYS: ${JWT_TTL_DAYS:-7}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres-data:

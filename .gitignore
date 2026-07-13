@@ -34,3 +34,6 @@ out/
 .env.local
 *.env
 !.env.example
+
+# Bundled Expo web export — only ever created inside the Docker build (ADR-008), never on host
+src/main/resources/static/

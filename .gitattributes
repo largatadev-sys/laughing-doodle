@@ -1,0 +1,8 @@
+# Files executed on Linux must keep LF endings even on Windows checkouts — a CRLF shebang
+# breaks them inside the Docker build (Story 9 / ADR-008). gradlew's CRLF bit us once; it is
+# additionally stripped in the Dockerfile as a backstop.
+gradlew        text eol=lf
+*.sh           text eol=lf
+Dockerfile     text eol=lf
+*.dockerfile   text eol=lf
+.dockerignore  text eol=lf

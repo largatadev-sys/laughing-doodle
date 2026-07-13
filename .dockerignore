@@ -1,0 +1,37 @@
+# Keep the build context small and never ship secrets or reproducible artifacts.
+
+# Build outputs & caches (rebuilt inside the image)
+build/
+.gradle/
+bin/
+out/
+client/node_modules/
+client/dist/
+client/.expo/
+node_modules/
+
+# Secrets / local env (compose injects env at run time; never bake into the image)
+.env
+.env.local
+*.env
+!.env.example
+client/.env
+
+# VCS / IDE / agent tooling — irrelevant to the build
+.git/
+.gitignore
+.idea/
+.vscode/
+.agents/
+.claude/
+client/.claude/
+client/.vscode/
+
+# Docs & meta (not needed to build the app)
+docs/
+*.md
+SYSTEM_DESIGN_PLAYBOOK.md
+skills-lock.json
+
+# Logs
+*.log

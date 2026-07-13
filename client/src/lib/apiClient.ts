@@ -5,7 +5,12 @@ import type {
   UpdateEntryRequest,
 } from './types';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+// Empty/unset → a relative base, so `${BASE_URL}/api/...` calls the same origin that served
+// the app. That's the prod path: the Spring image serves this web bundle and the API together
+// (ADR-008), so no CORS and no baked absolute URL. In dev, client/.env sets an absolute URL
+// (http://localhost:8080 for the web dev server, a LAN IP for Expo Go). Never `undefined`,
+// which would produce "undefined/api/...".
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
 export class ApiError extends Error {
   status: number;
