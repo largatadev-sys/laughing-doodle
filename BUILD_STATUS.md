@@ -19,7 +19,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | # | Story | Status | Plan | Commit |
 |---|-------|--------|------|--------|
 | 1 | Walking-skeleton base: schema + health | ✅ | [plan](docs/plans/story-1-walking-skeleton.md) | `ec07a60` |
-| 2 | Auth: login + JWT filter + seeded users | ⬜ | — | — |
+| 2 | Auth: login + JWT filter + seeded users | ✅ | [plan](docs/plans/story-2-auth.md) | `facf891` |
 | 3 | Create a time entry | ⬜ | — | — |
 | 4 | List entries (shared read, filterable) | ⬜ | — | — |
 | 5 | Edit own entry (ownership enforced) | ⬜ | — | — |
