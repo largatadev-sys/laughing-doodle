@@ -153,13 +153,17 @@ explicit **scope boundary**, and **fits one context window**.
 
 ### Story 9 — Deploy to prod (skeleton goes live)
 
-- **Context anchor.** [04](04-architecture.md) deployment section; collapse dev→prod.
-- **Vertical slice.** Spring app + managed Postgres on a PaaS; Expo web build on a static
-  host pointing at the prod API over HTTPS; secrets via the platform's env UI.
-- **Acceptance criteria.**
+- **Context anchor.** [04](04-architecture.md) deployment section + **ADR-008** (bundled
+  single-origin); collapse dev→prod.
+- **Vertical slice.** A multi-stage `Dockerfile` bundles the Expo web export into the Spring
+  image; **one** container (web at `/` + API at `/api`) deploys to a PaaS (Railway) with
+  managed Postgres, single origin over HTTPS; secrets via the platform's env UI. A local
+  `docker compose --profile fullstack` gate runs the identical image before deploy.
+- **Acceptance criteria.** *(unchanged)*
   - AC-1 Prod URL serves the web app; login + CRUD work end-to-end over HTTPS.
   - AC-2 No secrets in the repo; prod secrets set in the platform env UI.
 - **Scope boundary — do NOT touch.** No CI/CD pipeline, no monitoring stack (deferred).
+  Daily dev stays native (`bootRun` + Expo host); Docker is the parity gate, not the loop.
 - **Fits one window?** Yes.
 
 ---

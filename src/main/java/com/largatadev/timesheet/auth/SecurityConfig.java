@@ -59,7 +59,12 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/health", "/api/auth/login", "/error").permitAll()
-						.anyRequest().authenticated())
+						// The API is the security boundary — every /api/** call needs a valid JWT.
+						// INV-2 (author-only writes) is enforced downstream in the entries service; unchanged here.
+						.requestMatchers("/api/**").authenticated()
+						// The bundled Expo web export (static/) is public: it must load before login,
+						// holds no secrets, and enforces nothing. See ADR-008.
+						.anyRequest().permitAll())
 				.exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

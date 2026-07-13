@@ -27,7 +27,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 7a | Expo client: scaffold + login + my-entries list | ✅ | [plan](docs/plans/story-7a-expo-scaffold-login-list.md) | `af9fdee` |
 | 7b | Expo client: create/edit/delete my entries | ✅ | [plan](docs/plans/story-7b-expo-create-edit-delete.md) | `d74452d` |
 | 8 | Team feed (shared visibility view) | ✅ | [plan](docs/plans/story-8-team-feed.md) | `e761bf6` |
-| 9 | Deploy to prod (skeleton goes live) | ⬜ | — | — |
+| 9 | Deploy to prod (skeleton goes live) | 🔄 | [plan](docs/plans/story-9-deploy.md) | — |
 
 *(Deploy story 9 may be pulled forward after story 3 for an early thin skeleton — see 07.)*
 

@@ -48,22 +48,30 @@ Mode dial: this is an internal/learning build, so the three-environment pipeline
 **collapsed to dev → prod** (release discipline a pre-validation internal tool doesn't need).
 
 - **Dev** — local machine. Spring app run natively (IDE/Gradle); Postgres in a container.
-- **Prod** — Spring app deployed to a PaaS (e.g. Railway/Render); managed Postgres; Expo
-  **web** build published as static files to a static host (Netlify/Vercel/GH Pages),
-  pointed at the prod API over HTTPS.
+- **Prod** — **one** container image (the Spring app, which also serves the Expo **web**
+  export from `static/`) deployed to a PaaS (Railway); managed Postgres; web + API on a
+  **single origin** over HTTPS. *(Supersedes the original split topology — separate static
+  host for the web — per ADR-008. The Story-9 acceptance criteria are unchanged.)*
 - **Promotion path** — single `main` + short-lived `feature/<story>` branches (see
   CLAUDE.md). The walking skeleton (story 1 + auth + one entry path) deploys to prod early.
 
 ## Containerization scope  *(stated explicitly — never inferred)*
 
-- **Local: datastore-only.** Postgres runs in a container; the Spring app runs natively.
-- **Why (not the full-stack default):** solo dev on a learning build; the learning
-  objective is Expo + Spring Security, **not** Docker. Datastore-only gives the fastest
-  edit-run loop. The playbook sanctions datastore-only/none for Learning/throwaway builds.
-- **Tradeoff accepted:** the local app environment drifts from prod (the classic
-  "works on my machine" gap). Acceptable at this scale; revisit if deploy-time surprises
-  appear (that's the invalidator — see ADR-006).
-- **Prod:** app deploys to a PaaS + managed DB — a different topology; parity is not a goal here.
+**Two-mode, since Story 9 (ADR-008 refines ADR-006):**
+
+- **Daily loop: datastore-only.** Postgres runs in a container; the Spring app runs
+  natively (`bootRun`) and Expo runs on the host (web dev server + Expo Go). This is the
+  fast edit-run loop ADR-006 protects — unchanged for day-to-day work.
+- **Parity gate: full-stack.** `docker compose --profile fullstack up --build` builds and
+  runs the **bundled prod image** (Spring serving the Expo web export + the API) next to
+  Postgres. It is the *same image* the PaaS runs, so it proves the deploy before it ships.
+  Run it before deploying, not on every keystroke.
+- **Why now (vs. ADR-006's datastore-only-only):** Story 9 makes "deploy-time surprises"
+  imminent — the exact risk ADR-006 named as its invalidator. Rather than absorb them in
+  prod, we front-load them into an on-demand local gate. The learning objective is still
+  Expo + Spring Security, not a Dockerised dev loop, so daily dev stays native.
+- **Prod:** the **same** bundled image + managed DB (single origin). Parity *is* now a
+  goal, delivered by the gate running the identical artifact.
 
 ---
 
@@ -110,6 +118,9 @@ Mode dial: this is an internal/learning build, so the three-environment pipeline
 **ADR-006 — Local containerization = datastore-only.** → rationale under
 "Containerization scope" above. *Invalidates it:* deploy-time "works locally, breaks in
 prod" bugs recur → move to full-stack local containerization for behavioural parity.
+*Refined by ADR-008 (Story 9):* the invalidator effectively fired at deploy time, so
+local containerization is now **two-mode** — datastore-only for the daily loop **plus** an
+on-demand full-stack parity gate. The fast native daily loop this ADR protects is retained.
 
 **ADR-007 — Projects deferred, added later as a nullable field.**
 - *Context.* At 4 users the shared feed is scannable without grouping by project.
@@ -118,6 +129,30 @@ prod" bugs recur → move to full-stack local containerization for behavioural p
 - *Assumption.* The team stays small enough that an unstructured feed is readable.
 - *Invalidates it.* Team/volume grows and "what is everyone working on?" stops being
   answerable by eye → introduce Projects (additive; never scavenge structure from `description`).
+
+**ADR-008 — Full-stack single-origin containerization; the app image serves the web.**
+- *Context.* Story 9 (deploy). Developer wants dev/prod parity and one deployable. ADR-006
+  had chosen datastore-only local containerization; the deployment section had assumed the
+  Expo web export ships to a *separate* static host (→ CORS + a build-time-baked API URL).
+- *Decision.* A multi-stage `Dockerfile` bundles the Expo **web** export
+  (`expo export`, `web.output: "single"`) into the Spring Boot image's `static/`. **One**
+  container serves the web app at `/` and the REST API at `/api/*` — single origin.
+  Deploy that one image to a PaaS (Railway) + managed Postgres. Local
+  `docker compose --profile fullstack up` runs the *same image* as a pre-deploy parity gate;
+  daily dev stays native (ADR-006's fast loop preserved). `web.output` moves `static`→`single`
+  (SPA) so one `/*→index.html` fallback serves every route, including dynamic `[id]` ones.
+- *Consequences.* No CORS and no baked API URL in prod (client calls a **relative** `/api`).
+  One deploy, one origin, PaaS-provided TLS. Frontend+backend deploys are **coupled**
+  (fine at solo/4-user scale). `SecurityConfig` makes static assets public while keeping
+  `/api/**` authenticated — **INV-2 unchanged**. The Story-9 acceptance criteria are unchanged.
+- *Assumption that makes it right.* Solo dev, ~4–10 internal authed users: no need for an
+  independent frontend deploy cadence, preview deploys, a CDN/edge, SSR/SEO, or per-tier
+  scaling. Parity + one deployable beat deploy decoupling.
+- *Invalidates it.* Frontend needs its own deploy cadence / preview deploys; web needs a
+  CDN/edge for scale or geography; or SSR/SEO is wanted → split the web back onto a static
+  host (toward Story-9-as-originally-written), reintroducing CORS + a baked API URL.
+- *Amends.* ADR-006 (local containerization → two-mode) and the deployment section's
+  "web on a separate static host."
 
 **Deferred (until validated).** Caching, read replicas, async/queues, rate limiting,
 real observability — explicitly **not** decided now; revisit signal-driven post-validation.
