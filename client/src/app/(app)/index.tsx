@@ -1,10 +1,32 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { router, Stack, useFocusEffect } from 'expo-router';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { apiClient, UnauthorizedError } from '@/lib/apiClient';
 import { useAuth } from '@/lib/auth';
 import type { EntryResponse } from '@/lib/types';
+
+function confirmDelete(): Promise<boolean> {
+  const message = 'Delete this entry? This cannot be undone.';
+  if (Platform.OS === 'web') {
+    return Promise.resolve(window.confirm(message));
+  }
+  return new Promise((resolve) => {
+    Alert.alert('Delete entry', message, [
+      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+    ]);
+  });
+}
 
 export default function MyEntries() {
   const { session, logout } = useAuth();
@@ -44,9 +66,51 @@ export default function MyEntries() {
     }, [session, logout]),
   );
 
+  function goToEdit(item: EntryResponse) {
+    router.push({
+      pathname: '/[id]/edit',
+      params: {
+        id: String(item.id),
+        entryDate: item.entryDate,
+        durationMin: String(item.durationMin),
+        description: item.description,
+      },
+    });
+  }
+
+  async function handleDelete(item: EntryResponse) {
+    const confirmed = await confirmDelete();
+    if (!confirmed || !session) {
+      return;
+    }
+    try {
+      await apiClient.deleteEntry(item.id, session.token);
+      setEntries((prev) => (prev ? prev.filter((e) => e.id !== item.id) : prev));
+    } catch (e) {
+      if (e instanceof UnauthorizedError) {
+        logout();
+        return;
+      }
+      setError(e instanceof Error ? e.message : 'Failed to delete entry.');
+    }
+  }
+
+  const screenOptions = (
+    <Stack.Screen
+      options={{
+        headerLeft: () => (
+          <Pressable onPress={() => router.push('/new')} hitSlop={8}>
+            <Text style={styles.newLink}>+ New</Text>
+          </Pressable>
+        ),
+      }}
+    />
+  );
+
   if (error) {
     return (
       <View style={styles.center}>
+        {screenOptions}
         <Text style={styles.error}>{error}</Text>
       </View>
     );
@@ -55,29 +119,43 @@ export default function MyEntries() {
   if (entries === null) {
     return (
       <View style={styles.center}>
+        {screenOptions}
         <ActivityIndicator />
       </View>
     );
   }
 
   return (
-    <FlatList
-      contentContainerStyle={styles.list}
-      data={entries}
-      keyExtractor={(item) => String(item.id)}
-      ListEmptyComponent={
-        <View style={styles.center}>
-          <Text>No entries yet.</Text>
-        </View>
-      }
-      renderItem={({ item }) => (
-        <View style={styles.row}>
-          <Text style={styles.date}>{item.entryDate}</Text>
-          <Text style={styles.duration}>{item.durationMin} min</Text>
-          <Text style={styles.description}>{item.description}</Text>
-        </View>
-      )}
-    />
+    <>
+      {screenOptions}
+      <FlatList
+        contentContainerStyle={styles.list}
+        data={entries}
+        keyExtractor={(item) => String(item.id)}
+        ListEmptyComponent={
+          <View style={styles.center}>
+            <Text>No entries yet.</Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            <Text style={styles.date}>{item.entryDate}</Text>
+            <Text style={styles.duration}>{item.durationMin} min</Text>
+            <Text style={styles.description}>{item.description}</Text>
+            {item.userId === session?.user.id && (
+              <View style={styles.actions}>
+                <Pressable onPress={() => goToEdit(item)} hitSlop={8}>
+                  <Text style={styles.actionLink}>Edit</Text>
+                </Pressable>
+                <Pressable onPress={() => handleDelete(item)} hitSlop={8}>
+                  <Text style={styles.actionLinkDestructive}>Delete</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        )}
+      />
+    </>
   );
 }
 
@@ -110,5 +188,22 @@ const styles = StyleSheet.create({
   },
   description: {
     color: '#111827',
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 8,
+  },
+  actionLink: {
+    color: '#1d4ed8',
+    fontWeight: '600',
+  },
+  actionLinkDestructive: {
+    color: '#b91c1c',
+    fontWeight: '600',
+  },
+  newLink: {
+    color: '#1d4ed8',
+    fontWeight: '600',
   },
 });

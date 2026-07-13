@@ -23,6 +23,18 @@ export interface EntryResponse {
   updatedAt: string;
 }
 
+export interface CreateEntryRequest {
+  entryDate: string;
+  durationMin: number;
+  description: string;
+}
+
+export interface UpdateEntryRequest {
+  entryDate: string;
+  durationMin: number;
+  description: string;
+}
+
 export interface ErrorEnvelope {
   error: {
     code: string;

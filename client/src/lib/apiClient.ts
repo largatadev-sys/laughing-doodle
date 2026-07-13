@@ -1,15 +1,22 @@
-import type { EntryResponse, LoginResponse } from './types';
+import type {
+  CreateEntryRequest,
+  EntryResponse,
+  LoginResponse,
+  UpdateEntryRequest,
+} from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export class ApiError extends Error {
   status: number;
   code: string;
+  details?: Record<string, unknown>;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, details?: Record<string, unknown>) {
     super(message);
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -42,10 +49,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   if (!response.ok) {
     const code = data?.error?.code ?? 'UNKNOWN';
     const message = data?.error?.message ?? 'Something went wrong. Please try again.';
+    const details = data?.error?.details;
     if (response.status === 401) {
-      throw new UnauthorizedError(response.status, code, message);
+      throw new UnauthorizedError(response.status, code, message, details);
     }
-    throw new ApiError(response.status, code, message);
+    throw new ApiError(response.status, code, message, details);
   }
 
   return data as T;
@@ -69,5 +77,21 @@ export const apiClient = {
     if (params.to) query.set('to', params.to);
     const qs = query.toString();
     return request<EntryResponse[]>(`/api/entries${qs ? `?${qs}` : ''}`, { token });
+  },
+
+  createEntry(request_: CreateEntryRequest, token: string): Promise<EntryResponse> {
+    return request<EntryResponse>('/api/entries', { method: 'POST', body: request_, token });
+  },
+
+  updateEntry(id: number, request_: UpdateEntryRequest, token: string): Promise<EntryResponse> {
+    return request<EntryResponse>(`/api/entries/${id}`, {
+      method: 'PUT',
+      body: request_,
+      token,
+    });
+  },
+
+  deleteEntry(id: number, token: string): Promise<void> {
+    return request<void>(`/api/entries/${id}`, { method: 'DELETE', token });
   },
 };
