@@ -20,17 +20,17 @@ Verifiable entirely on its own via a persistence-layer test; no HTTP surface nee
 
 **Blocked by:** None — can start immediately.
 
-- [ ] A migration seeds exactly 4 users: one `admin` role, three `member` role, each with
+- [x] A migration seeds exactly 4 users: one `admin` role, three `member` role, each with
       a placeholder name/username (not real teammates' names) and a BCrypt hash of a
       single shared, obviously-placeholder password (never a real credential).
-- [ ] User lookup by username is case-insensitive in effect (queries against the
+- [x] User lookup by username is case-insensitive in effect (queries against the
       already-lowercased stored value — see [02-domain-model.md](../design/02-domain-model.md)
       INV-5), and returns enough to identify the user (id, name, username, role) plus the
       password hash *only* for the internal verification path — nothing outside the
       persistence layer needs the hash itself.
-- [ ] A lookup for a username that doesn't exist returns an absent/empty result, not an
+- [x] A lookup for a username that doesn't exist returns an absent/empty result, not an
       exception — the caller (Story 2's login ticket) decides how to translate that.
-- [ ] A persistence-layer test proves: all 4 seeded users are queryable by username; a
+- [x] A persistence-layer test proves: all 4 seeded users are queryable by username; a
       lookup for a non-existent username comes back empty; the stored password hash is a
       real BCrypt hash (not plaintext).
 
@@ -46,17 +46,17 @@ not require the login flow to exist yet.
 
 **Blocked by:** None — can start immediately.
 
-- [ ] A distinct, catchable representation exists for each error case named in
+- [x] A distinct, catchable representation exists for each error case named in
       [06b-engineering-decisions.md](../design/06b-engineering-decisions.md)'s taxonomy:
       validation failure (400), unauthenticated (401), forbidden (403), not found (404),
       conflict (409), and an unexpected/internal case (500).
-- [ ] Raising any of these, from anywhere in the app, produces the standard envelope shape
+- [x] Raising any of these, from anywhere in the app, produces the standard envelope shape
       with the matching `code` string and HTTP status — and nothing else in the app
       constructs that envelope by hand.
-- [ ] An unexpected/uncaught failure never leaks raw internal detail (stack trace, SQL,
+- [x] An unexpected/uncaught failure never leaks raw internal detail (stack trace, SQL,
       exception class name) to the client — it becomes the generic `INTERNAL`/500 case,
       with the real cause logged once, server-side, at that single point.
-- [ ] A test proves each error case, triggered directly, yields the correct status code
+- [x] A test proves each error case, triggered directly, yields the correct status code
       and envelope shape.
 
 ---
@@ -72,18 +72,18 @@ Demoable directly via curl/Postman against the seeded users.
 
 **Blocked by:** Seed users & persistence layer, Standardized error envelope.
 
-- [ ] `POST /api/auth/login` with a seeded user's correct username + password → `200` with
+- [x] `POST /api/auth/login` with a seeded user's correct username + password → `200` with
       a signed token and `user{id,name,username,role}` — no `password_hash` field anywhere
       in the response.
-- [ ] Wrong password for a real username → `401` using the standard error envelope, with
+- [x] Wrong password for a real username → `401` using the standard error envelope, with
       the exact same `code` and `message` text as the unknown-username case below.
-- [ ] Unknown username → `401`, same code/message text as the wrong-password case — a
+- [x] Unknown username → `401`, same code/message text as the wrong-password case — a
       client cannot distinguish "no such user" from "wrong password" from the response.
-- [ ] The issued token carries the user's identity and role and has a real, verifiable
+- [x] The issued token carries the user's identity and role and has a real, verifiable
       expiry (~7 days out per [04-architecture.md](../design/04-architecture.md) ADR-002)
       — it is not an opaque/unsigned value a client could forge.
-- [ ] The password hash is never written to a log line by any part of this flow.
-- [ ] Tests cover: correct credentials → 200 + expected body shape; wrong password → 401;
+- [x] The password hash is never written to a log line by any part of this flow.
+- [x] Tests cover: correct credentials → 200 + expected body shape; wrong password → 401;
       unknown username → 401 with identical error body to the wrong-password case.
 
 ---
@@ -99,15 +99,15 @@ the enforcement mechanism every later story (create/edit/delete a time entry) bu
 
 **Blocked by:** Login issues a JWT.
 
-- [ ] A request to any non-login, non-health route with no `Authorization` header → `401`
+- [x] A request to any non-login, non-health route with no `Authorization` header → `401`
       using the standard error envelope.
-- [ ] The same route with a malformed or invalid-signature token → `401`.
-- [ ] The same route with a well-formed but expired token → `401`.
-- [ ] The same route with a valid, unexpired token (minted by the login ticket) → the
+- [x] The same route with a malformed or invalid-signature token → `401`.
+- [x] The same route with a well-formed but expired token → `401`.
+- [x] The same route with a valid, unexpired token (minted by the login ticket) → the
       request proceeds, and the caller's user id + role are available to downstream code
       without re-querying the database or trusting anything from the request body.
-- [ ] `GET /api/health` continues to work with **no** token required (unchanged from
+- [x] `GET /api/health` continues to work with **no** token required (unchanged from
       Story 1) — confirming the filter doesn't regress the existing walking skeleton.
-- [ ] A test exercises the full filter chain (not just the token-parsing logic in
+- [x] A test exercises the full filter chain (not just the token-parsing logic in
       isolation) against a route that requires authentication, covering: no token,
       invalid token, expired token, and valid token.

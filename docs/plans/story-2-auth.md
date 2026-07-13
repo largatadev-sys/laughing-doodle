@@ -133,10 +133,16 @@ security context. Seed 4 users (one admin) via migration.
     the typed-properties pattern is structure P9 says to earn through actual pain
     (multiple properties, multiple consumers, validation needs), not adopt preemptively.
 
-18. **`Role` enum lives in `users/`**, mapped via `@Enumerated(EnumType.STRING)` on
-    `User` (per Story 1 plan decision #5, which already anticipated this). Consumed by
-    `auth` (JWT claim, `AuthenticatedUser`) but owned by `users` — same "auth and entries
-    share only the User identity" principle from 04-architecture.md.
+18. **`Role` enum lives in `users/`**, mapped via a custom `AttributeConverter<Role, String>`
+    (`RoleConverter`, `@Converter(autoApply = true)`), not the plan's originally-stated
+    `@Enumerated(EnumType.STRING)`. Corrected during implementation: `@Enumerated(STRING)`
+    writes `Enum.name()` verbatim (`"MEMBER"`/`"ADMIN"`), which violates Story 1's schema
+    constraint `CHECK (role IN ('member','admin'))` (lowercase) — any insert/update via
+    JPA would fail at the DB. `RoleConverter` keeps Java's uppercase enum-constant
+    convention while lowercasing on write and uppercasing on read, so both the schema
+    constraint and Java style are satisfied. Consumed by `auth` (JWT claim,
+    `AuthenticatedUser`) but owned by `users` — same "auth and entries share only the
+    User identity" principle from 04-architecture.md.
 
 ## Deliverables
 
