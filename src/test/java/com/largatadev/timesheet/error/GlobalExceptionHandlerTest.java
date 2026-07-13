@@ -1,8 +1,10 @@
 package com.largatadev.timesheet.error;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,6 +60,24 @@ class GlobalExceptionHandlerTest {
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 		assertThat(response.getBody().error().code()).isEqualTo("CONFLICT");
 		assertThat(response.getBody().error().message()).isEqualTo("already exists");
+	}
+
+	@Test
+	void malformedQueryParamYields400ValidationFailed() throws NoSuchMethodException {
+		MethodParameter parameter = new MethodParameter(
+				GlobalExceptionHandlerTest.class.getDeclaredMethod("dummyTarget", Long.class), 0);
+		MethodArgumentTypeMismatchException ex =
+				new MethodArgumentTypeMismatchException("abc", Long.class, "userId", parameter, null);
+
+		ResponseEntity<ErrorEnvelope> response = handler.handleTypeMismatch(ex);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+		assertThat(response.getBody().error().code()).isEqualTo("VALIDATION_FAILED");
+		assertThat(response.getBody().error().details()).containsKey("userId");
+	}
+
+	@SuppressWarnings("unused")
+	private void dummyTarget(Long userId) {
 	}
 
 	@Test
