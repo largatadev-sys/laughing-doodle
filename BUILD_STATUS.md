@@ -24,7 +24,8 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 4 | List entries (shared read, filterable) | ✅ | [plan](docs/plans/story-4-list-entries.md) | `aa14ade` |
 | 5 | Edit own entry (ownership enforced) | ✅ | [plan](docs/plans/story-5-edit-own-entry.md) | `b046a75` |
 | 6 | Delete own entry (ownership enforced) | ✅ | [plan](docs/plans/story-6-delete-own-entry.md) | `6908804` |
-| 7 | Expo client: login → my entries → CRUD | ⬜ | — | — |
+| 7a | Expo client: scaffold + login + my-entries list | ⬜ | — | — |
+| 7b | Expo client: create/edit/delete my entries | ⬜ | — | — |
 | 8 | Team feed (shared visibility view) | ⬜ | — | — |
 | 9 | Deploy to prod (skeleton goes live) | ⬜ | — | — |
 

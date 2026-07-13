@@ -107,17 +107,38 @@ explicit **scope boundary**, and **fits one context window**.
 - **Scope boundary — do NOT touch.** No cascade beyond the single entry.
 - **Fits one window?** Yes.
 
-### Story 7 — Expo client: login → my entries → create/edit/delete
+### Story 7a — Expo client: scaffold + login + my-entries list
 
-- **Context anchor.** Single Expo codebase (ADR-001); web is the real target. Consumes stories 2–6.
-- **Vertical slice.** Login screen (stores JWT) → list of my entries → form to create →
-  edit/delete my own. Runs on web (primary) and native (dev).
+- **Context anchor.** Single Expo codebase (ADR-001); web is the real target. Consumes
+  stories 2 (login) and 4 (list, filtered to the caller via `?userId=`). First story to
+  touch the client — also stands up the Expo project itself (routing, API client, token
+  storage) that Story 7b builds on.
+- **Vertical slice.** Expo/TypeScript project scaffolded → login screen (stores JWT) →
+  read-only list of my own entries (`GET /api/entries?userId=<me>`). Runs on web (primary)
+  and native (dev).
 - **Acceptance criteria (= tests, manual/UI for MVP — no automated e2e per 06b).**
   - AC-1 Log in on web → token stored → authenticated calls succeed.
-  - AC-2 Create/edit/delete my entry reflects in the list.
-  - AC-3 Runs as a web build and in Expo native dev from the same code.
-- **Scope boundary — do NOT touch.** No team-feed grouping yet (Story 8); no offline.
-- **Fits one window?** Borderline — split into 7a (auth+list) / 7b (create/edit/delete) if it doesn't.
+  - AC-2 List shows only the caller's own entries, pulled live from the API.
+  - AC-3 An expired/invalid token on any call clears the stored token and returns to login.
+  - AC-4 Runs as a web build and in Expo native dev from the same code.
+- **Scope boundary — do NOT touch.** No create/edit/delete UI (Story 7b); no team-feed
+  grouping (Story 8); no offline.
+- **Fits one window?** Yes (split from the original combined Story 7 for this reason —
+  see [plan](../plans/story-7a-expo-scaffold-login-list.md)).
+
+### Story 7b — Expo client: create/edit/delete my entries
+
+- **Context anchor.** Builds directly on 7a's scaffold, API client, and auth/token
+  plumbing. Consumes stories 3 (create), 5 (edit), 6 (delete).
+- **Vertical slice.** Form to create an entry → edit/delete controls on entries I authored
+  in the 7a list (others' entries stay read-only, per INV-2).
+- **Acceptance criteria (= tests, manual/UI for MVP — no automated e2e per 06b).**
+  - AC-1 Create my entry → appears in the list without a manual refresh.
+  - AC-2 Edit my entry → list reflects the change.
+  - AC-3 Delete my entry → it disappears from the list.
+  - AC-4 No edit/delete affordance is shown for another user's entry.
+- **Scope boundary — do NOT touch.** No team-feed grouping (Story 8); no offline.
+- **Fits one window?** Yes.
 
 ### Story 8 — Team feed (shared visibility view)
 
@@ -156,6 +177,6 @@ explicit **scope boundary**, and **fits one context window**.
 
 ## Rough sequence / dependencies
 
-`1 → 2 → 3 → 4 → 5 → 6` (backend vertical), then `7 → 8` (client), then `9` (deploy).
+`1 → 2 → 3 → 4 → 5 → 6` (backend vertical), then `7a → 7b → 8` (client), then `9` (deploy).
 Deploy (9) can be pulled forward right after Story 3 to get a *thin* skeleton live early
 (the highest-leverage move) and re-deployed as stories land.
