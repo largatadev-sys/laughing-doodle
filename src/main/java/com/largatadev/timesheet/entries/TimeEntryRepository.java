@@ -9,17 +9,12 @@ import java.util.List;
 
 public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
 
-	// COALESCE(:param, e.column) is load-bearing, not stylistic. A bare "(:param IS NULL OR
-	// col op :param)" makes Postgres's extended protocol unable to infer the parameter's
-	// type ("could not determine data type of parameter $1"); wrapping the null check in an
-	// explicit CAST fixes that but only for the first, unprepared execution of the query —
-	// once the JDBC driver reuses a server-side prepared statement for a genuinely-null
-	// value, it binds that null as `bytea` by default and "cannot cast type bytea to date"
-	// resurfaces (only reproduces once a connection re-executes the query — never showed up
-	// under a fresh Testcontainers run, only against the app run live). COALESCE against the
-	// (never-null) entry column sidesteps both failure modes: when the param is null the
-	// comparison degenerates to "col op col" (always true), and Postgres infers the
-	// parameter's type from the column it's coalesced with, in every execution path.
+	// Must stay COALESCE(:param, e.column). A bare "(:param IS NULL OR col op :param)" leaves
+	// Postgres unable to infer that parameter's type when it's null. A CAST-guarded version
+	// of the same check only fixes that for a query's first, unprepared execution — once the
+	// driver reuses a server-side prepared statement, a null parameter gets bound as `bytea`
+	// by default and the CAST is then rejected. COALESCE never compares the bare parameter to
+	// NULL, so neither failure mode applies.
 	@Query("""
 			SELECT e FROM TimeEntry e
 			WHERE e.entryDate >= COALESCE(:from, e.entryDate)
