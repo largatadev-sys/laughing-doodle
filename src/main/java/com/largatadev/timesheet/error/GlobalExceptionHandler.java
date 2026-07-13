@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -18,6 +21,14 @@ public class GlobalExceptionHandler {
 		}
 		return ResponseEntity.status(ex.code().status())
 				.body(ErrorEnvelope.of(ex.code(), ex.getMessage(), ex.details()));
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ErrorEnvelope> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+		String paramName = ex.getName();
+		return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status())
+				.body(ErrorEnvelope.of(ErrorCode.VALIDATION_FAILED, "Invalid query parameter",
+						Map.of(paramName, "could not be parsed")));
 	}
 
 	@ExceptionHandler(Exception.class)

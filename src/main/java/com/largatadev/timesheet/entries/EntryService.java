@@ -5,9 +5,12 @@ import com.largatadev.timesheet.users.User;
 import com.largatadev.timesheet.users.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class EntryService {
@@ -36,6 +39,19 @@ public class EntryService {
 
 		User author = userRepository.findById(userId).orElseThrow();
 		return EntryResponse.of(saved, author.getName());
+	}
+
+	public List<EntryResponse> list(LocalDate from, LocalDate to, Long userId) {
+		List<TimeEntry> entries = timeEntryRepository.findByFilters(from, to, userId);
+
+		Map<Long, String> namesByUserId = userRepository
+				.findAllById(entries.stream().map(TimeEntry::getUserId).distinct().toList())
+				.stream()
+				.collect(Collectors.toMap(User::getId, User::getName));
+
+		return entries.stream()
+				.map(entry -> EntryResponse.of(entry, namesByUserId.get(entry.getUserId())))
+				.toList();
 	}
 
 	private void validate(CreateEntryRequest request) {
