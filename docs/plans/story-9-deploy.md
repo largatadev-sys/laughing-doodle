@@ -113,6 +113,26 @@ into a gate we clear on purpose. See ADR-008.
 - `client/.env.example` — document dev-absolute vs prod-relative.
 - `.env.example` — note the env surface used by the compose `app` service.
 - `docs/deploy/railway.md` (new) — Phase 2 step-by-step checklist.
+- `scripts/smoke.sh` (new) — runnable smoke test for the local gate **and** prod; includes the
+  proxy-CORS check below.
+
+## Post-deploy fix — CORS behind Railway's TLS proxy (found on prod)
+
+The first prod deploy booted and served fine, but **browser login returned `403 "Invalid CORS
+request"`** (curl didn't — no browser `Origin` header). Root cause: Railway terminates TLS and
+forwards over http; browsers send `Origin` on same-origin POSTs; Spring, not honoring
+`X-Forwarded-Proto`, saw its own scheme as `http` vs the `https` Origin → treated a *same-origin*
+request as cross-origin → checked it against `CORS_ALLOWED_ORIGINS` (`localhost:*`) → rejected.
+
+- **Fix:** `server.forward-headers-strategy=framework` in `application.properties` — Spring honors
+  `X-Forwarded-Proto/Host`, sees itself as `https://…railway.app`, matches the Origin, and skips
+  CORS for the (correctly recognized) same-origin request. Verified locally that a genuine
+  cross-origin request is *still* rejected — CORS is not weakened.
+- **Why the gate missed it:** the local gate had no TLS-terminating proxy, so scheme always
+  matched and the bug was invisible — the classic "only the real deploy surfaces it" (this repo's
+  recurring lesson). **Gate hardening:** `scripts/smoke.sh` now *simulates* the proxy
+  (`Origin: https` + `X-Forwarded-Proto: https`) so this class of bug is caught locally before
+  deploy. Run `scripts/smoke.sh` against the gate before every deploy.
 
 ## Manual verification
 

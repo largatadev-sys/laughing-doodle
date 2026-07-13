@@ -87,10 +87,25 @@ htpasswd -bnBC 10 "" 'the-real-password' | tr -d ':\n'
 
 ## 7. Smoke test (AC-1)
 
+Before deploying, run the smoke script against the **local gate** — it now includes a
+proxy-CORS check that catches the trap below without a real deploy:
+```
+docker compose --profile fullstack up -d app
+scripts/smoke.sh http://localhost:8080 admin changeme123
+```
+After deploying, run it against **prod** (unauth + real-origin CORS checks):
+```
+scripts/smoke.sh https://<app>.up.railway.app
+```
+Then in a browser:
 - Open the `https://…up.railway.app` domain → the **web app** loads (served by Spring).
 - Log in with a rotated credential → `GET /api/entries` succeeds (same origin, no CORS).
 - Create / edit / delete an entry and open the Team Feed → all work end-to-end over HTTPS.
 - Hard-refresh `/team` and an edit route → the app loads (SPA fallback), not a 404.
+
+> **CORS behind the proxy (required):** Railway terminates TLS and forwards over http. The app
+> sets `server.forward-headers-strategy=framework` so it recognizes its real `https` origin;
+> without it, same-origin browser POSTs are wrongly rejected as `403 "Invalid CORS request"`.
 
 ## Rollback / redeploy
 
