@@ -12,7 +12,7 @@
 -- duration/description picked from a small rotating set for variety. Re-runnable: run
 -- `DELETE FROM time_entries;` first if you want a clean slate before reseeding.
 
-INSERT INTO time_entries (user_id, entry_date, duration_min, description)
+INSERT INTO time_entries (user_id, entry_date, duration_min, description, created_at, updated_at)
 SELECT
     u.id,
     d.entry_date,
@@ -30,7 +30,9 @@ SELECT
         'Pairing session',
         'Refactoring',
         'Test coverage'
-    ])[1 + floor(random() * 12)::int]
+    ])[1 + floor(random() * 12)::int],
+    ts.logged_at,
+    ts.logged_at
 FROM
     (SELECT id FROM users) u
     CROSS JOIN LATERAL (
@@ -38,6 +40,22 @@ FROM
         FROM generate_series(0, 29) AS day_offset
         WHERE EXTRACT(ISODOW FROM CURRENT_DATE - day_offset) < 6  -- Mon-Fri only
     ) d
+    CROSS JOIN LATERAL (
+        -- "Logged" instant on the SAME calendar day as entry_date, in the developer's LOCAL zone
+        -- so the feed's relative-time reads coherently instead of clustering at "just now" (the
+        -- default now() did). Without AT TIME ZONE a bare UTC stamp east of UTC rolls to the next
+        -- day. Change 'Australia/Sydney' if your machine is elsewhere. Capped at now() so today's
+        -- rows never get a future timestamp. The u.id term gives each user a distinct base hour
+        -- (morning → afternoon) — and, by referencing u.id, forces this to evaluate PER ROW rather
+        -- than once-per-date (a FROM-LATERAL that referenced only entry_date got cached per day,
+        -- stamping every user at the same minute).
+        SELECT LEAST(
+            (d.entry_date + time '08:00'
+               + (u.id * interval '73 min')
+               + (random() * interval '90 min')) AT TIME ZONE 'Australia/Sydney',
+            now()
+        ) AS logged_at
+    ) ts
 WHERE random() > 0.15;  -- ~15% of weekdays are skipped (nobody logs every single day)
 
 -- Sanity check after running:

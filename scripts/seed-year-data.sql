@@ -39,10 +39,11 @@ SELECT
         'Incident follow-up',
         'Release prep'
     ])[1 + floor(random() * 16)::int],
-    -- Stamp created/updated at the day it was "logged" (17:00), so historical rows read
-    -- coherently in the feed's relative-time and sort correctly on Profile.
-    (d.entry_date + time '17:00')::timestamptz,
-    (d.entry_date + time '17:00')::timestamptz
+    -- Stamp created/updated at a plausible work-hour on the SAME calendar day as entry_date,
+    -- so historical rows read coherently in the feed's relative-time and sort correctly on
+    -- Profile. See the ts LATERAL below for why this is timezone-aware.
+    ts.logged_at,
+    ts.logged_at
 FROM
     (SELECT id FROM users) u
     CROSS JOIN LATERAL (
@@ -53,8 +54,24 @@ FROM
     ) d
     CROSS JOIN LATERAL (
         -- 1 entry, plus a 2nd on ~40% of days
-        SELECT generate_series(1, 1 + (random() < 0.4)::int)
-    ) reps;
+        SELECT generate_series(1, 1 + (random() < 0.4)::int) AS n
+    ) reps
+    CROSS JOIN LATERAL (
+        -- "Logged" instant on entry_date, in the developer's LOCAL zone so it renders on the
+        -- same calendar day in the app. A bare (entry_date + 17:00)::timestamptz is 17:00 UTC,
+        -- which east of UTC rolls to the NEXT day (the "logged · Jul 3 on the Jul 2 screen" bug).
+        -- AT TIME ZONE also gets DST offsets right per historical date. Change 'Australia/Sydney'
+        -- if your machine is elsewhere; capped at now() so today's rows aren't future-dated.
+        -- Referencing u.id + reps.n gives each user a distinct base hour AND a per-entry offset,
+        -- and forces per-row evaluation (referencing only entry_date got cached once per day).
+        SELECT LEAST(
+            (d.entry_date + time '08:00'
+               + (u.id * interval '73 min')
+               + (reps.n * interval '17 min')
+               + (random() * interval '55 min')) AT TIME ZONE 'Australia/Sydney',
+            now()
+        ) AS logged_at
+    ) ts;
 
 -- Sanity check after running:
 --   SELECT count(*) AS total,
