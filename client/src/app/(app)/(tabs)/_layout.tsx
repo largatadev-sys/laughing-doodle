@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ComposeButton, TabBarButton } from '@/components/nav/TabBar';
+import { TabTransition } from '@/components/nav/TabTransition';
 import { colors, radius, shadow, space, TAB_BAR_HEIGHT } from '@/theme';
 
 // Headless tabs (expo-router/ui) so the bar can be a fully custom floating red pill with a
@@ -13,7 +14,9 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   return (
     <Tabs>
-      <TabSlot />
+      <TabTransition>
+        <TabSlot />
+      </TabTransition>
 
       <View
         style={[styles.barWrap, { bottom: Math.max(insets.bottom, 10) }]}

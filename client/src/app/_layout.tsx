@@ -74,6 +74,10 @@ function RootNavigator() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.bg },
+        // The auth boundary is a change of *state*, not a step deeper — so cross it with a
+        // fade rather than a spatial slide. Signing in/out swaps the whole world calmly.
+        animation: 'fade',
+        animationDuration: 260,
       }}>
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="(app)" />

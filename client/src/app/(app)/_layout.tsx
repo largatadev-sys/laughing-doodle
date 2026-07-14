@@ -10,13 +10,18 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.bg },
+        // Forms slide up from the bottom (native modal feel), consistently timed so every
+        // sheet in the app rises at the same pace.
+        animationDuration: 300,
       }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="new" options={{ presentation: 'modal' }} />
       <Stack.Screen name="[id]/edit" options={{ presentation: 'modal' }} />
       <Stack.Screen name="change-name" options={{ presentation: 'modal' }} />
       <Stack.Screen name="change-password" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="day/[date]" />
+      {/* Tapping a day drills *deeper* into that date's agenda — a slide-from-right carries
+          that "one level down" relationship (and back-swipes right to return). */}
+      <Stack.Screen name="day/[date]" options={{ animation: 'ios_from_right' }} />
     </Stack>
   );
 }
