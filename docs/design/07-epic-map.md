@@ -229,6 +229,26 @@ one security surface (INV-2), which is untouched.
   valid till expiry — noted).
 - **Fits one window?** Yes.
 
+### Story 12 — Entry activity label: "logged / edited · when"
+
+- **Context anchor.** Presentation refinement to the shared `EntryCard` (Stories 8/10). **Client
+  only — no schema/API/auth/INV-2 change** (`EntryResponse` already returns `createdAt` + `updatedAt`).
+  Reinforces the two-axis model (INV-4): `entryDate` is the stable work day; `createdAt`/`updatedAt`
+  are the log/edit *instants*.
+- **Vertical slice.** The card caption reads `logged · <when>` until an entry is edited, then
+  `edited · <when>` keyed to `updatedAt`. `<when>` is relative ("22m ago"/"5h ago") only when the
+  action falls on the **viewer's** local calendar day; on any other day it shows the **date**
+  ("Jul 3" / "Jul 3, 2025"), never "N days ago". List order stays by `createdAt` (an edit must not
+  reorder rows).
+- **Acceptance criteria (= UI checks; manual per 06b + a `datetime` logic repro).**
+  - AC-1 Unedited entry → `logged · <when>`; once edited → `edited · <when>` (from `updatedAt`).
+  - AC-2 Same-viewer-day action → relative; any other day → the date, never "Nd ago"; future clock
+    skew degrades to "just now".
+  - AC-3 Order unchanged (still `createdAt` desc); editing a row does not move it.
+- **Scope boundary — do NOT touch.** No second/paired timestamp, no "edited" badge/colour (caption
+  stays quiet — the tally bar is the card's signature), no backend/sort-order change.
+- **Fits one window?** Yes. Design rationale + spec: [plan](../plans/story-12-entry-activity-label.md).
+
 ---
 
 ## Backlog epics (placeholders — post-validation, signal-driven)

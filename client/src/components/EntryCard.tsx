@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 import { Avatar, Card, StatusPill, TallyBar } from '@/components/ui';
-import { formatDuration, relativeTime, WORKDAY_MIN } from '@/lib/datetime';
+import { activityLabel, formatDuration, WORKDAY_MIN } from '@/lib/datetime';
 import type { EntryResponse } from '@/lib/types';
 import { colorForName, colors, fonts, space, tabularNums, type } from '@/theme';
 
@@ -18,6 +18,7 @@ interface EntryCardProps {
 // accent outline + edit/delete; others are read-only (INV-2, expressed in the UI).
 export function EntryCard({ entry, isOwn, onEdit, onDelete }: EntryCardProps) {
   const hue = colorForName(entry.authorName);
+  const activity = activityLabel(entry.createdAt, entry.updatedAt);
   return (
     <Card accent={isOwn}>
       <View style={styles.header}>
@@ -29,7 +30,7 @@ export function EntryCard({ entry, isOwn, onEdit, onDelete }: EntryCardProps) {
             </Text>
             {isOwn && <StatusPill label="you" />}
           </View>
-          <Text style={type.caption}>logged · {relativeTime(entry.createdAt)}</Text>
+          <Text style={type.caption}>{activity.verb} · {activity.when}</Text>
         </View>
         <Text style={styles.duration}>{formatDuration(entry.durationMin)}</Text>
       </View>

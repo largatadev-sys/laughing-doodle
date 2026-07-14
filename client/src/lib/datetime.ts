@@ -95,18 +95,38 @@ export function formatHours(min: number): string {
   return Number.isInteger(rounded) ? `${rounded}h` : `${rounded}h`;
 }
 
-// "logged 2h ago" — relative time from a timestamp, degrading to a date past a week.
-export function relativeTime(iso: string, now: Date = new Date()): string {
-  const then = new Date(iso);
-  const secs = Math.floor((now.getTime() - then.getTime()) / 1000);
-  if (secs < 45) return 'just now';
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return `${MONTHS[then.getMonth()]} ${then.getDate()}`;
+// Activity caption for an entry card: which verb (logged vs edited) and when it happened.
+// "logged" keys off createdAt; once an entry is edited (updatedAt strictly after createdAt) it
+// becomes "edited" and keys off updatedAt (on create the backend sets both equal → "logged").
+// The time reads relative ("22m ago"/"5h ago") only when the action happened on the VIEWER's local
+// calendar day; on any other day it shows the date ("Jul 3"/"Jul 3, 2025"), never "N days ago" —
+// on a timesheet the date is the useful information, not a fuzzy day-count.
+export function activityLabel(
+  createdAt: string,
+  updatedAt: string,
+  now: Date = new Date(),
+): { verb: 'logged' | 'edited'; when: string } {
+  const created = new Date(createdAt);
+  const updated = new Date(updatedAt);
+  const edited = updated.getTime() > created.getTime();
+  const ref = edited ? updated : created;
+  return { verb: edited ? 'edited' : 'logged', when: whenLabel(ref, now) };
+}
+
+// Relative on the viewer's own day, else the absolute date. `ref` and `now` are compared via local
+// Date accessors (isSameDay), so "same day" means the same day for whoever is looking. `ref` is a
+// real instant — its LOCAL date is legitimately viewer-relative here (it describes the log/edit
+// action, not the work day; the stable work day is `entryDate`, shown elsewhere).
+function whenLabel(ref: Date, now: Date): string {
+  if (isSameDay(ref, now)) {
+    const secs = Math.floor((now.getTime() - ref.getTime()) / 1000);
+    if (secs < 45) return 'just now'; // also covers small future clock skew (negative secs)
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return `${mins}m ago`;
+    return `${Math.floor(mins / 60)}h ago`; // same day ⇒ ≤ ~23h
+  }
+  const day = `${MONTHS[ref.getMonth()]} ${ref.getDate()}`;
+  return ref.getFullYear() === now.getFullYear() ? day : `${day}, ${ref.getFullYear()}`;
 }
 
 // Day divider label: "Today" · "Yesterday" · "Mon, Jul 14".
