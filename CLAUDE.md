@@ -46,6 +46,20 @@ secret · changing the authorization/ownership logic (INV-2) · deleting data ·
 irreversible. The **single security surface is INV-2** (author-only writes, IDOR defense) —
 never weaken it to make a test pass.
 
+## Deploys are not "done" on automated checks alone
+
+**Incident, 2026-07-14 (Story 9):** a prod deploy passed every automated check (curl-based;
+no browser sends an `Origin` header the way a real login does) and was reported as working.
+The developer's first real login attempt, in an actual browser, hit a `403` the checks never
+saw (proxy-CORS — see [story-9-deploy.md](docs/plans/story-9-deploy.md)). **Explicitly flagged
+by the developer as not tolerable going forward.**
+
+**Standing rule:** automated checks (`scripts/smoke.sh`, tests, curl probes) narrow what can go
+wrong; they do not substitute for it. **A deploy is not considered verified until the developer
+has personally exercised it live — a real browser, a real login** — regardless of how green the
+agent's automated checks are. Report deploy results as "automated checks pass; needs your live
+check," never as "done" or "verified" on their own.
+
 ## Never commit secrets
 
 - **Structural (the real defence):** `.env`, `.env.local`, and any file with credentials

@@ -116,6 +116,23 @@ into a gate we clear on purpose. See ADR-008.
 - `scripts/smoke.sh` (new) — runnable smoke test for the local gate **and** prod; includes the
   proxy-CORS check below.
 
+## Incident — first prod login broken (2026-07-14)
+
+**Timeline.** Phase 1 (local gate) shipped and verified green. Phase 2 deployed to Railway;
+automated checks (curl-based, no browser `Origin` header) passed. The developer's **first real
+login attempt, in an actual browser, failed with `403 "Invalid CORS request"`.** Root-caused,
+fixed, redeployed (~80s), reverified — see below.
+
+**Why this is recorded as an incident, not just a bug.** The agent's automated verification
+reported the deploy as working when it was not, for a real user, on the first real use. The
+developer has flagged this as **not tolerable** going forward — not because the bug itself was
+unusual (it's a known class: behind-a-proxy CORS), but because a broken deploy reached a live
+login attempt before a human had checked it in a browser. **Standing rule from this incident
+(recorded in [CLAUDE.md](../../CLAUDE.md)): a deploy is not "done" on the agent's automated
+checks alone — the developer performs the actual closing check (a real browser, a real login)
+before a deploy is considered verified.** Automated checks (`scripts/smoke.sh`, now including a
+proxy-CORS simulation per below) narrow what can go wrong before that point; they do not replace it.
+
 ## Post-deploy fix — CORS behind Railway's TLS proxy (found on prod)
 
 The first prod deploy booted and served fine, but **browser login returned `403 "Invalid CORS
