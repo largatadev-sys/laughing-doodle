@@ -73,6 +73,8 @@ export default function DayDetail() {
     return [...map.entries()].map(([name, minutes]) => ({ name, minutes })).sort((a, b) => b.minutes - a.minutes);
   }, [entries]);
 
+  // Order by createdAt (newest first) — creation order, NOT updatedAt: an edit changes the card's
+  // "edited · …" label but must not reorder rows out from under the reader.
   const sorted = useMemo(
     () => [...(entries ?? [])].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
     [entries],
