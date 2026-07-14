@@ -49,16 +49,16 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 
 | #   | Story                                                        | Status | Plan | Commit    |
 | --- | ------------------------------------------------------------ | ------ | ---- | --------- |
-| 10  | Largata redesign: brand system + tab shell + feed + calendar | ✅     | —    | _pending_ |
-| 11  | Self-service account: change name + password                 | ✅     | —    | _pending_ |
+| 10  | Largata redesign: brand system + tab shell + feed + calendar | ✅     | —    | `ab25486` |
+| 11  | Self-service account: change name + password                 | ✅     | —    | `ab25486` |
 
 Brand tokens live in `client/src/theme/`; work is on `feature/10-largata-ux-redesign`. Story 10
 also now carries: a **calendar date picker** (replaces free-text date), **motion** (tally bars
 grow via `scaleX`; staggered `FadeInView` entrances; hover/press states — all `prefers-reduced-motion`
 aware), **web optimisation** (centered phone-column `WebFrame`, pointer/hover affordances), a
-shared **`AppHeader`** showing the signed-in user's name, and a more prominent **log out** on
-Profile. **Not yet verified live** — per the deploy-verification standing rule, a real
-device/browser check by the developer closes it.
+a shared **`AppHeader`** with a header **Log out** (the user's name shows in the greeting), and the
+**RN-web scroll fix** + a thin on-brand web scrollbar. Verification + current status: see the note
+below.
 
 **Story 11** (self-service **change name + password**) was developer-approved despite the auth
 stop-rule; it adds only authenticated endpoints (`PUT /api/auth/password`, `PUT /api/auth/name`) —
