@@ -154,5 +154,30 @@ on-demand full-stack parity gate. The fast native daily loop this ADR protects i
 - *Amends.* ADR-006 (local containerization → two-mode) and the deployment section's
   "web on a separate static host."
 
+**ADR-009 — Monorepo layout: `backend/` + `client/` peers; root is orchestration.**
+- *Context.* The Expo client was scaffolded into `client/` (Story 7a), but the Java/Gradle
+  backend still sat scattered at the repo root (`src/`, `build.gradle`, `gradlew…`) alongside
+  the docs and compose files — asymmetric and harder to navigate as the codebase grows. The
+  cleanup was deferred 2026-07-13 (cosmetic; cost lands on the immutable doc record), then done.
+- *Decision.* Nest the whole Gradle project under `backend/`, so the root holds two symmetric
+  app peers — `backend/`, `client/` — plus an **orchestration layer** that runs them together:
+  `docker-compose.yml`, the single-origin `Dockerfile` (its `COPY`s gain a `backend/` prefix;
+  build context stays the root because the image needs *both* peers), `.env`/`.env.example`,
+  `scripts/`, `docs/`. Each peer owns its own `.gitignore`.
+- *Rejected alternative.* A **root Gradle multi-project** (`settings.gradle` at root doing
+  `include 'backend'`) — rejected as ceremony for a single JVM module, and it would re-plant a
+  Gradle root at the top, contradicting "root = orchestration only." Revisit only if a second
+  JVM module appears.
+- *Consequences.* Run Gradle from `backend/` (`cd backend && ./gradlew …`). `.env` and compose
+  stay at root, unchanged — the backend never read `.env` from disk (it resolves env vars with
+  baked-in defaults that match compose's), so nesting the project doesn't disturb that
+  relationship. No behaviour change anywhere; it's discoverability only.
+- *Immutable-record handling.* Live docs (`CLAUDE.md`, `BUILD_STATUS.md`, `docs/deploy/railway.md`)
+  were updated to the new paths; the point-in-time `docs/plans/` and `docs/tickets/` records were
+  **left frozen** with their old-root paths, and a single `BUILD_STATUS.md` ledger line dates the
+  move so a reader of an old plan knows when its paths stopped being current.
+- *Invalidates it.* A second backend service/JVM module, or a genuine need to build both peers
+  from one root command, → reconsider the root multi-project (or a proper monorepo tool).
+
 **Deferred (until validated).** Caching, read replicas, async/queues, rate limiting,
 real observability — explicitly **not** decided now; revisit signal-driven post-validation.

@@ -11,7 +11,11 @@ change.
 2026-07-13) — the symmetry win is cosmetic and the cost lands on the immutable decision
 record (see below); revisit when there's a reason to touch repo structure anyway.
 
-**Status:** ready-for-human
+**Status:** done (2026-07-14) — un-deferred and executed on branch
+`chore/repo-restructure-backend-client`. Rationale + rejected alternative recorded as ADR-009;
+off-epic ledger line in BUILD_STATUS. Verified: `./gradlew build` green from `backend/`, the
+full-stack parity image builds with `backend/`-prefixed COPYs and `scripts/smoke.sh` passes
+(health, SPA, proxy-CORS, live login + authed read).
 
 ## Why it's deferred, not done
 
@@ -38,12 +42,18 @@ in the *surrounding contract*:
 
 ## Acceptance criteria (when un-deferred)
 
-- [ ] `backend/` and `client/` are sibling top-level directories; backend builds and runs
-      from `backend/` (`./gradlew bootRun`, tests green).
-- [ ] `docker-compose.yml` ↔ backend `.env` working-directory relationship is re-settled
-      and a clean `bootRun` against the compose Postgres still works end-to-end.
-- [ ] Live docs (`CLAUDE.md`, `BUILD_STATUS.md`, `.claude/settings.local.json`) updated to
-      the new paths; no stale root-relative backend paths remain in *live* docs.
-- [ ] Immutable `docs/plans/` + `docs/tickets/` records handled per an explicit, recorded
-      decision (leave-as-of-then vs. one-time relocation note) — not silently edited.
-- [ ] Landed as an off-epic change with its own `BUILD_STATUS.md` ledger line.
+- [x] `backend/` and `client/` are sibling top-level directories; backend builds and runs
+      from `backend/` — `cd backend && ./gradlew clean build` green (compile + Testcontainers
+      suite), and the full-stack image runs the real jar end-to-end.
+- [x] `docker-compose.yml` ↔ backend `.env` re-settled: both stay at root (compose auto-loads
+      `.env` there; the backend never read `.env` from disk — it resolves env vars with defaults
+      that match compose's). A clean run against the compose Postgres works end-to-end
+      (`scripts/smoke.sh` login + authed read pass against the parity image).
+- [x] Live docs updated to the new paths (`CLAUDE.md` — new *Repo layout* section + wrapper
+      path; `BUILD_STATUS.md` ledger; `docs/deploy/railway.md` migration link); no stale
+      root-relative backend paths remain in *live* docs. *(`.claude/settings.local.json` is
+      untracked local-only config, not a committed doc — its `./gradlew` permission globs are
+      throwaway conveniences re-granted on next use, so it was intentionally not edited.)*
+- [x] Immutable `docs/plans/` + `docs/tickets/` records **left frozen** (leave-as-of-then),
+      per the explicit decision recorded in ADR-009 and dated by the BUILD_STATUS ledger line.
+- [x] Landed as an off-epic change with its own `BUILD_STATUS.md` ledger line.

@@ -22,14 +22,15 @@ RUN npx expo export --platform web --output-dir dist
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 # Wrapper + build config first, so the dependency download layer caches on build.gradle only.
-COPY gradlew ./
-COPY gradle ./gradle
+# The Java project now lives under backend/ (peer to client/); build context stays the repo root.
+COPY backend/gradlew ./
+COPY backend/gradle ./gradle
 # gradlew is checked out with Windows CRLF line endings; strip them so the shebang works on Linux.
 RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
-COPY build.gradle settings.gradle ./
+COPY backend/build.gradle backend/settings.gradle ./
 RUN ./gradlew --no-daemon dependencies > /dev/null 2>&1 || true
 # App source + the web export copied into static/ so bootJar packages it at classpath:/static/.
-COPY src ./src
+COPY backend/src ./src
 COPY --from=web /client/dist ./src/main/resources/static
 # Tests need a Docker daemon (Testcontainers) — they run in the dev loop, not the image build.
 RUN ./gradlew --no-daemon clean bootJar -x test

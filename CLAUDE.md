@@ -15,6 +15,21 @@ in the context package below; this file only _points_ at it. Keep under ~2 pages
 - Engineering decisions (per-system + test depth!) → [docs/design/06b-engineering-decisions.md](docs/design/06b-engineering-decisions.md)
 - Epic map & stories → [docs/design/07-epic-map.md](docs/design/07-epic-map.md)
 
+## Repo layout
+
+Two symmetric app peers at the root, plus an orchestration layer that runs them together:
+
+- `backend/` — the Java/Spring/Gradle project (`backend/src`, `backend/build.gradle`, `backend/gradlew`).
+  **Run Gradle from here:** `cd backend && ./gradlew …`. Has its own `.gitignore`.
+- `client/` — the Expo/React-Native project (own `.gitignore`, `.env`, `package.json`).
+- Root = orchestration/glue for the whole stack: `docker-compose.yml`, `Dockerfile`
+  (single-origin image, `backend/`-prefixed COPYs), `.env`/`.env.example` (compose + backend
+  share these), `scripts/`, `docs/`. See ADR-009.
+
+Backend moved out of the repo root into `backend/` on 2026-07-14 (off-epic — see BUILD_STATUS
+ledger). Path references in `docs/plans/` and `docs/tickets/` dated before then are relative to
+the old root and were intentionally left frozen (immutable-record convention).
+
 ## State — always maintain
 
 - BUILD_STATUS → [BUILD_STATUS.md](BUILD_STATUS.md). Every story that lands updates its
@@ -139,7 +154,7 @@ into the worktree; remove the worktree once its branch merges into `dev`.
   refuses to start against the old path. Local host port is env-overridable via
   `DATABASE_PORT` (default 5432) to dodge conflicts with other local stacks.
 - **No local JDK 21**; only 17 & 25 installed, and `gradle`/`sdk` aren't on PATH — use
-  `./gradlew` (wrapper is Gradle 9.6.1, runs on Java 25).
+  the wrapper from `backend/`: `cd backend && ./gradlew …` (wrapper is Gradle 9.6.1, runs on Java 25).
 - **Spring behind a TLS-terminating proxy (prod, Railway): set
   `server.forward-headers-strategy=framework`.** The proxy forwards over http; browsers send
   an `Origin` header on same-origin POSTs; without honoring `X-Forwarded-Proto` Spring sees its

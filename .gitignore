@@ -1,39 +1,15 @@
-HELP.md
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
+# Repo-wide ignores. backend/ and client/ each carry their own .gitignore for
+# toolchain-specific artefacts; this file holds only what's genuinely cross-cutting.
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
+# Editors (metadata can sit at whichever level the IDE is opened)
+.vscode/
 .idea
 *.iws
 *.iml
 *.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### VS Code ###
-.vscode/
 
 # Env / secrets
 .env
 .env.local
 *.env
 !.env.example
-
-# Bundled Expo web export — only ever created inside the Docker build (ADR-008), never on host
-src/main/resources/static/

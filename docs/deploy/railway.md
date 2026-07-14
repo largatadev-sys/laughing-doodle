@@ -66,7 +66,7 @@ DB creds resolve from the Postgres service at deploy time:
 ## 6. Rotate the seeded passwords (AC-2, required before sharing the URL)
 
 The seeded users ship a **public** BCrypt hash of `changeme123`
-([V2](../../src/main/resources/db/migration/V2__seed_users.sql)) — a real credential in prod.
+([V2](../../backend/src/main/resources/db/migration/V2__seed_users.sql)) — a real credential in prod.
 Rotate all four before anyone gets the URL (ADR-002's admin-reset mechanism):
 
 ```sql

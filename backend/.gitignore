@@ -1,0 +1,31 @@
+# Backend (Java / Gradle) build artefacts — peer to client/.gitignore.
+# Patterns are relative to backend/, so they scope cleanly to this project only.
+
+HELP.md
+
+# Gradle
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Eclipse / STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# IntelliJ build output
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Bundled Expo web export — only ever created inside the Docker build (ADR-008), never on host.
+src/main/resources/static/
