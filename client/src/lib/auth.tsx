@@ -2,12 +2,14 @@ import { createContext, use, useEffect, useState, type PropsWithChildren } from 
 
 import { apiClient } from './apiClient';
 import { clearSession, loadSession, saveSession, type StoredSession } from './tokenStorage';
+import type { UserSummary } from './types';
 
 interface AuthContextValue {
   session: StoredSession | null;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (user: UserSummary) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -43,5 +45,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setSession(null);
   }
 
-  return <AuthContext value={{ session, isLoading, login, logout }}>{children}</AuthContext>;
+  // Refresh the stored profile in place (same token) — e.g. after a display-name change.
+  async function updateUser(user: UserSummary) {
+    setSession((prev) => {
+      if (!prev) return prev;
+      const next: StoredSession = { token: prev.token, user };
+      void saveSession(next);
+      return next;
+    });
+  }
+
+  return (
+    <AuthContext value={{ session, isLoading, login, logout, updateUser }}>{children}</AuthContext>
+  );
 }

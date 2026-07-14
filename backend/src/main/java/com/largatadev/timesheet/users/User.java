@@ -35,6 +35,17 @@ public class User {
 	protected User() {
 	}
 
+	// Replaces the stored BCrypt hash. The caller is responsible for encoding + verifying the
+	// current password first (see AuthService.changePassword).
+	public void changePassword(String newPasswordHash) {
+		this.passwordHash = newPasswordHash;
+	}
+
+	// Updates the display name (not the login username). Caller validates/trims first.
+	public void rename(String newName) {
+		this.name = newName;
+	}
+
 	public Long getId() {
 		return id;
 	}

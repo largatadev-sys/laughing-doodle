@@ -168,11 +168,87 @@ explicit **scope boundary**, and **fits one context window**.
 
 ---
 
+## Epic 2: **Largata UX & mobile visual identity**
+
+Post-MVP. The MVP epic proved the slice works end-to-end; this epic makes it feel like a
+product and, specifically, like a **Largata** product. Two experience shifts requested by the
+developer: the user's home becomes a **social-style activity feed** of the team's logged work,
+and the team view becomes an **Outlook-style calendar** (week + month). Delivered against the
+**Largata brand** (hot red chrome, rounded/pill surfaces, floating tab bar, multi-colour member
+avatars) on a **mobile-native, phone-portrait** target.
+
+Presentation-layer only — **no schema, auth, or INV-2 change.** A wider slice than the MVP's
+security stories is acceptable here precisely because the risk surface is presentation, not the
+one security surface (INV-2), which is untouched.
+
+### Story 10 — Largata redesign: brand system + tab shell + feed + calendar
+
+- **Context anchor.** Epic *Largata UX* · reskins & restructures the existing client
+  (Stories 7a/7b/8) · consumes the same API (Story 4 `GET /api/entries?from=&to=&userId=`) —
+  **no new endpoints.** Honest to the domain: entries are date-only + duration (INV-4), so the
+  calendar renders **duration-as-load**, never an invented clock-time grid.
+- **Vertical slice.** A shared design-token system (colour/type/space) + Plus Jakarta Sans →
+  a headless `expo-router/ui` **floating red pill tab bar** (Home · Calendar · centre ＋ compose ·
+  Profile) → **Home** = team activity feed (compose header, per-week meter, day-grouped cards
+  with per-person avatars + tally bars + hand-drawn day connectors) → **Calendar** = month grid
+  + week (7 stacked day-loads) + a **day-detail** agenda drill-in → **Profile** = my entries +
+  log out. Login and the create/edit forms are restyled to match.
+- **Acceptance criteria (= UI checks; manual per 06b — no automated e2e).**
+  - AC-1 Bottom tab bar switches Home/Calendar/Profile; the centre ＋ opens the compose form
+    over the tabs; the bar respects the safe-area inset and is thumb-reachable.
+  - AC-2 Home shows the team's recent entries grouped by day, each with the author's avatar
+    (deterministic per-person colour), a friendly duration, and relative time; my own entries
+    expose edit/delete, others' do not (INV-2 read/write split intact in the UI).
+  - AC-3 Calendar offers **week** and **month**; today is marked; each day shows its load; tapping
+    a day opens that day's entries. No clock-time grid is shown (none exists in the data).
+  - AC-4 Every screen (login, forms, rows) wears the Largata identity; runs phone-portrait,
+    fonts load behind the splash, reduced-motion respected, ≥44px touch targets.
+- **Scope boundary — do NOT touch.** No schema/API change; no reactions/comments (would need a
+  new table — deferred); no projects/tags; no desktop/wide layout; INV-2 logic unchanged.
+- **Fits one window?** Delivered as one branch/one squash commit; wider than an MVP story by
+  design (presentation risk only).
+
+### Story 11 — Self-service account: change name + password
+
+- **Context anchor.** Auth domain (developer-approved despite the auth stop-rule). First slice of
+  the backlog "User management UI" epic, pulled forward on request. **No SecurityConfig / JWT /
+  INV-2 change** — the endpoints fall under the existing `/api/**` authenticated rule.
+- **Vertical slice.** `PUT /api/auth/password {currentPassword, newPassword}` — verifies the
+  current password, enforces new ≥ 8 chars and different from current, re-hashes (BCrypt), updates
+  the token user's `password_hash`. `PUT /api/auth/name {name}` — trims + validates (1–100 chars,
+  matches `users.name`), updates the display name, returns the updated profile so the client
+  refreshes its session/header in place. "Change name" + "Change password" screens from Profile.
+- **Acceptance criteria (= tests).**
+  - AC-1 Valid change → `204`; the new password logs in, the old no longer does.
+  - AC-2 Wrong current password → **`400 VALIDATION_FAILED`** (field `currentPassword`), *not* 401
+    — a 401 would trip the client into logging the user out mid-change. Password unchanged.
+  - AC-3 New password too short or same as current → `400` (field `newPassword`).
+  - AC-4 No token → `401`.
+- **Scope boundary — do NOT touch.** Identity from the token, never the body (INV-1 spirit). No
+  admin reset of others' passwords (deferred); no session/token revocation (stateless JWT stays
+  valid till expiry — noted).
+- **Fits one window?** Yes.
+
+---
+
 ## Backlog epics (placeholders — post-validation, signal-driven)
 
 - **Projects** — optional `project_id` on entries + admin project management (additive; ADR-007).
 - **Reporting & aggregation** — per-person / per-project rollups over periods.
 - **Approvals** — if the team ever wants a submit → review flow (adds a `status` state machine).
+- **Attachments** — photos & files on an entry (upload + storage), plus an **activity-detail
+  modal**: tap an entry to open a modal showing the full description, metadata, and its attached
+  photos/files. Needs a `time_entry_attachments` table + object storage + upload endpoints; the
+  detail modal is the client surface. Requested 2026-07-14.
+- **Pagination, virtualization & scale (the feed at volume)** — _current behaviour, noted
+  2026-07-14:_ the Home feed loads a **fixed 14-day window** in one request (won't ever load a
+  year — but also can't show older on Home); the **Calendar** loads per week/month; **Profile
+  loads a user's entire history unbounded**, and `GET /api/entries` has **no server pagination or
+  LIMIT** (Story 4 scope call). The client also renders whole lists in a plain scroll container
+  (no virtualization — `FlatList` was swapped out in Story 10 for layout control). Fine for one
+  team + weeks of data; **before real historical volume (a year+) or a second team**, add: cursor
+  pagination (`?before=&limit=`) on the list endpoint → client "load older" / infinite scroll →
+  list virtualization. Trigger is data volume, not the calendar.
 - **User management UI** — admin creates/deactivates users, resets passwords in-app.
 - **Multi-tenancy** — only if a second team ever needs isolation (ADR-004 invalidator).
 - **Offline & sync** — local queue + conflict resolution (large; only if connectivity hurts).

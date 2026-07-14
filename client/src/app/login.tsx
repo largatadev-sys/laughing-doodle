@@ -1,16 +1,11 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { Logo, PillButton } from '@/components/ui';
 import { ApiError } from '@/lib/apiClient';
 import { useAuth } from '@/lib/auth';
+import { colors, fonts, radius, space, type } from '@/theme';
 
 export default function Login() {
   const { login } = useAuth();
@@ -18,6 +13,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
 
   async function handleSubmit() {
     setError(null);
@@ -33,78 +29,69 @@ export default function Login() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Team Timesheet</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.screen}>
+      <View style={styles.inner}>
+        <View style={styles.brand}>
+          <Logo size={34} tagline="Team Worklog" />
+        </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
-        autoCapitalize="none"
-        autoCorrect={false}
-        value={username}
-        onChangeText={setUsername}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+        <View style={styles.form}>
+          <TextInput
+            style={[styles.input, focused === 'u' && styles.inputFocused]}
+            placeholder="Username"
+            placeholderTextColor={colors.brand}
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={username}
+            onFocus={() => setFocused('u')}
+            onBlur={() => setFocused(null)}
+            onChangeText={setUsername}
+            onSubmitEditing={handleSubmit}
+          />
+          <TextInput
+            style={[styles.input, focused === 'p' && styles.inputFocused]}
+            placeholder="Password"
+            placeholderTextColor={colors.brand}
+            secureTextEntry
+            value={password}
+            onFocus={() => setFocused('p')}
+            onBlur={() => setFocused(null)}
+            onChangeText={setPassword}
+            onSubmitEditing={handleSubmit}
+          />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+          {error && <Text style={styles.error}>{error}</Text>}
 
-      <Pressable
-        style={[styles.button, isSubmitting && styles.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={isSubmitting}>
-        {isSubmitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Log in</Text>
-        )}
-      </Pressable>
-    </View>
+          <PillButton
+            label="Log in"
+            onPress={handleSubmit}
+            loading={isSubmitting}
+            style={styles.button}
+          />
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
+  screen: { flex: 1, backgroundColor: colors.surface },
+  inner: { flex: 1, justifyContent: 'center', paddingHorizontal: space.xl, gap: space.xxl },
+  brand: { alignItems: 'center' },
+  form: { gap: space.md },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorder,
+    borderRadius: radius.pill,
+    paddingHorizontal: space.xl,
+    paddingVertical: space.md + 2,
     fontSize: 16,
+    fontFamily: fonts.medium,
+    color: colors.text,
   },
-  error: {
-    color: '#b91c1c',
-  },
-  button: {
-    backgroundColor: '#1d4ed8',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
+  inputFocused: { borderColor: colors.brand },
+  error: { ...type.caption, color: colors.brand, fontFamily: fonts.semibold, textAlign: 'center' },
+  button: { marginTop: space.sm },
 });

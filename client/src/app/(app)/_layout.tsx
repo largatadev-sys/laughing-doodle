@@ -1,21 +1,22 @@
 import { Stack } from 'expo-router';
-import { Pressable, Text } from 'react-native';
 
-import { useAuth } from '@/lib/auth';
+import { colors } from '@/theme';
 
+// The authenticated stack: the tab shell, plus screens that present ABOVE the tabs — the
+// compose/edit forms as modals, and the day-detail agenda as a pushed screen.
 export default function AppLayout() {
-  const { logout } = useAuth();
-
   return (
     <Stack
       screenOptions={{
-        title: 'My Entries',
-        headerRight: () => (
-          <Pressable onPress={() => logout()} hitSlop={8}>
-            <Text style={{ color: '#1d4ed8', fontWeight: '600' }}>Log out</Text>
-          </Pressable>
-        ),
-      }}
-    />
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.bg },
+      }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="new" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="[id]/edit" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="change-name" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="change-password" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="day/[date]" />
+    </Stack>
   );
 }

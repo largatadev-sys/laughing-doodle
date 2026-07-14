@@ -3,6 +3,7 @@ import type {
   EntryResponse,
   LoginResponse,
   UpdateEntryRequest,
+  UserSummary,
 } from './types';
 
 // Empty/unset → a relative base, so `${BASE_URL}/api/...` calls the same origin that served
@@ -70,6 +71,18 @@ export const apiClient = {
       method: 'POST',
       body: { username, password },
     });
+  },
+
+  changePassword(currentPassword: string, newPassword: string, token: string): Promise<void> {
+    return request<void>('/api/auth/password', {
+      method: 'PUT',
+      body: { currentPassword, newPassword },
+      token,
+    });
+  },
+
+  updateName(name: string, token: string): Promise<UserSummary> {
+    return request<UserSummary>('/api/auth/name', { method: 'PUT', body: { name }, token });
   },
 
   listEntries(
