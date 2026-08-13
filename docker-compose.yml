@@ -32,6 +32,10 @@ services:
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-changeme}
       JWT_SECRET: ${JWT_SECRET:-dev-only-placeholder-secret-not-for-prod-use-change-me}
       JWT_TTL_DAYS: ${JWT_TTL_DAYS:-7}
+      # Shared secret for the Largata relay's intake route (ADR-010). A visible non-secret
+      # default so the gate works out of the box; the real value lives only in Railway's env
+      # UI (and Largata's), never in the repo.
+      REPORTS_INTAKE_SECRET: ${REPORTS_INTAKE_SECRET:-dev-only-placeholder-intake-secret-change-me}
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:

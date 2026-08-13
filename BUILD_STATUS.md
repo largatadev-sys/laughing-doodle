@@ -32,10 +32,15 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 
 _(Deploy story 9 may be pulled forward after story 3 for an early thin skeleton — see 07.)_
 
-**🟢 Live (prod):** <https://largata-ts.up.railway.app> — Railway, single-origin
+**🟢 Live (prod):** <https://worklog.largata.com> (custom domain, CNAME → Railway; the
+underlying <https://largata-ts.up.railway.app> still answers) — Railway, single-origin
 bundled image (Expo web + Spring API) + managed Postgres, HTTPS (ADR-008). MVP epic complete
-end-to-end. Deploy runbook: [docs/deploy/railway.md](docs/deploy/railway.md); pre/post-deploy
-check: `scripts/smoke.sh`.
+end-to-end. **Prod tracks the repo's `main` branch** (Railway service connected to GitHub
+`main`) — promoting `dev` → `main` and pushing is the release act, so the pre-deploy ritual
+(local fullstack gate + `scripts/smoke.sh`) belongs **before the push to `main`**, and the
+post-deploy smoke + live check after it. Deploy runbook:
+[docs/deploy/railway.md](docs/deploy/railway.md); pre/post-deploy check: `scripts/smoke.sh`.
+**In active team use since ~mid-July 2026** (developer-confirmed 2026-08-13).
 
 ---
 
@@ -87,9 +92,96 @@ bounds correctly). Diagnosed + verified by driving the live app with a headless 
 
 All of the above was **verified live** — by a headless-browser drive (login, scroll, calendar, date
 picker, change-name, change-password) **and** by the developer in a real browser against the local
-single-origin image. **Merged to `dev`; not yet deployed to prod** (prod deploy is a separate step —
-see the deploy-verification standing rule; also run `scripts/rename-users.sql` per environment to
-swap the placeholder usernames for real ones).
+single-origin image. **Merged to `dev`, promoted to `main` (both at `311c100`), and deployed to
+prod** — confirmed 2026-08-13 by probing the served JS bundle (Epic 2 markers `activityLabel` /
+`TabTransition` present) **and, decisively, by the developer: the team has been using the app in
+real day-to-day work and it holds up.** That real-usage confirmation satisfies the
+deploy-verification standing rule. **Validation signal: fired** — the backlog epics in
+[07](docs/design/07-epic-map.md) are no longer gated on "post-validation".
+_(Still to confirm in this record: whether `scripts/rename-users.sql` and the seeded-password
+rotation were run against prod — see the railway.md runbook step 6.)_
+
+## Story table — Epic 3: _Reports inbox (Largata feedback → worklog)_
+
+Users of the sibling product **Largata** report problems/ideas in-app; Reports relay into a
+worklog Inbox (fifth tab) for team triage. Design closed 2026-08-13 — spec, wire contract,
+and tickets: [docs/tickets/reports-inbox/](docs/tickets/reports-inbox/); ADR-010. Worklog's
+half only (the Largata-side relay is that repo's work). **New schema + a shared-secret
+intake surface — both stop-rules explicitly signed off by the developer 2026-08-13.**
+
+Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
+
+| #   | Story (= ticket)                                             | Status | Ticket |
+| --- | ------------------------------------------------------------ | ------ | ------ |
+| 13  | Intake skeleton: text-only Report lands + team list          | ✅     | [01](docs/tickets/reports-inbox/issues/01-intake-skeleton.md) |
+| 14  | Inbox tab: fifth tab, badge, list                            | ✅     | [02](docs/tickets/reports-inbox/issues/02-inbox-tab.md) |
+| 15  | Triage: status lifecycle + detail screen                     | ✅     | [03](docs/tickets/reports-inbox/issues/03-status-lifecycle.md) |
+| 16  | Screenshots: intake, storage, serving                        | ✅     | [04](docs/tickets/reports-inbox/issues/04-screenshots-pipeline.md) |
+| 17  | Screenshots in the inbox UI                                  | ✅     | [05](docs/tickets/reports-inbox/issues/05-screenshots-inbox-ui.md) |
+| 18  | Ship: environments, smoke, deploy                            | 🔄     | [06](docs/tickets/reports-inbox/issues/06-ship-and-bookkeeping.md) |
+
+**Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning`, **19 commits, not
+yet squashed into `dev`** — the six tickets, then a second pass implementing the Claude Design
+package, then UI bug fixes (including one revert pair that cancels out; the squash is what
+tidies this). Backend suite green (42 reports tests among them); client typechecks and lints
+clean.
+
+- **Backend.** New `reports` module beside `auth`/`entries`/`users`, same layering. Migrations
+  `V3__reports` (client-minted UUID PK = the idempotency key) and `V4__report_screenshots`
+  (bytes in `bytea`, keyed by report+ordinal). `POST /api/intake/reports` authenticates the
+  relay with `X-Intake-Secret` in **its own `@Order(1)` filter chain** — physically separate
+  from the JWT chain, so a Member's token cannot open intake and the secret opens nothing
+  else (both tested). **INV-2's enforcement code untouched.** Team routes: `GET /api/reports`
+  (newest-first by `submittedAt`, `?status=` filter), `PUT /api/reports/{id}/status`
+  (attribution from the JWT, never the body), `GET .../screenshots/{ordinal}`.
+- **Client.** Fifth tab with a `new`-count badge fed by a `ReportsProvider` mounted above the
+  tabs, so the badge is live everywhere and clears only as reports are triaged — never by
+  opening the tab. Screenshots are fetched with the bearer header (a plain `img src` can't
+  carry one), so `useAuthedImage` blobs them on web and passes headers to `Image` on native.
+- **Design pass (2026-08-14).** A Claude Design package (project `94d38f76` — "Reports Inbox
+  Designs" + "Reports Inbox Spec") arrived after the tickets were built; the developer chose
+  direction **1b** for the list and **1d** for the detail. The card list became **dense rows**
+  (status as a coloured left edge, segmented Open/Done/Dismissed, sub-chips within Open), and
+  the flat status pills became a **lifecycle rail** with Dismiss set apart. Also closed four
+  spec gaps the written spec named: skeleton loading (not a spinner), an error state that keeps
+  the cached list under a retry card, a lightbox pager, and a fade+scale badge pop.
+  **Documented deviation from 1b:** its swipe-to-triage rows are not built — see the input note
+  below.
+- **Input note — the app serves PC and mobile equally.** Row triage is tap-to-read,
+  **press-and-hold**-to-triage, because `onLongPress` fires for a mouse hold as well as a
+  touch; 1b's swipe rows were tried twice and abandoned (they cannot work with a mouse, and the
+  lifecycle already has the sheet and the detail rail). Photo navigation **does** swipe on both:
+  touch scrolls the pager natively, and a mouse-drag path routes through the same `goTo()` as
+  the arrows and ←/→ keys.
+- **Verified live locally, not in prod:** `bootRun` against the compose Postgres (both
+  migrations confirmed applied — the standing silent-Flyway trap), reports injected through
+  the real intake endpoint (201 → idempotent 200 → 401 on a bad secret), a byte-identical
+  screenshot round-trip, and a headless-browser drive of login → inbox → detail → lightbox →
+  triage, watching the badge go 2 → 1. **A developer live check in a real browser is still
+  the closing step.**
+- **Code review caught one real bug** (`4587602`): an oversized screenshot part returned
+  **500, not the contract's 400** — the servlet container rejects a >5MB part before any
+  controller runs, and nothing handled `MaxUploadSizeExceededException`, so the service's own
+  size check was dead code for exactly its own case. Worse than a wrong status: Largata's
+  relay retries until a 2xx, so a permanently-oversized payload would have been retried
+  forever. Reproduced live, fixed in `GlobalExceptionHandler`, re-verified live with a 6MB
+  part. The same commit de-duplicates the 401 envelope into an `ErrorResponseWriter` shared
+  by both auth schemes.
+- **Three UI bugs the developer found by using it** (`64f1255`, `7706a82`, `4f4f4b2`), all one
+  root cause worth naming: **an interaction verified only the way it was written passes while
+  the real input fails.** (1) Swipe rows snapped shut because the row derived its open state
+  from the parent and the propagation delay closed it — surfaced only by a real drag, since the
+  first check used synthetic click events. (2) The lightbox showed nothing: the images loaded
+  fine (`complete: true`, 860×1864 natural) and rendered **0px tall**, because a percentage
+  height resolved against a horizontal `ScrollView` child that sizes to content — every "did
+  it load?" signal said yes. (3) Multi-screenshot reports could not be paged with a mouse at
+  all, since `react-native-web` only wires touch events into scrolling. **Lesson for the next
+  UI story: check the rendered box and drive the real input, not the code path.**
+- **Story 18 remaining:** `dev` ← squash of this branch, `main` promotion, prod deploy with
+  `REPORTS_INTAKE_SECRET` set in Railway (byte-identical to Largata's), post-deploy smoke,
+  and the developer's real-browser check. Real end-to-end traffic only starts once the
+  Largata-side half ships in that repo — the spec's "Wire contract" section is that
+  session's starting input.
 
 ## Off-epic ledger
 

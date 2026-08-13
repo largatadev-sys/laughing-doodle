@@ -39,6 +39,7 @@ DB creds resolve from the Postgres service at deploy time:
 | `DATABASE_PASSWORD` | `${{Postgres.PGPASSWORD}}` | |
 | `JWT_SECRET` | *a real 256-bit secret* (e.g. `openssl rand -base64 48`) | **Never** the repo's dev placeholder. Set here only. |
 | `JWT_TTL_DAYS` | `7` | Optional (defaults to 7). |
+| `REPORTS_INTAKE_SECRET` | *a long random value* (e.g. `openssl rand -base64 48`) | Authenticates Largata's backend on `/api/intake/reports` (ADR-010) — the only non-JWT auth besides login. **Must be byte-identical to the value set in the Largata repo's deploy**, or every relayed report 401s. Never the repo's dev placeholder; set here only. Rotate by changing it on both sides and redeploying both. |
 
 - **Do NOT set `PORT`** — Railway injects it and the app already binds `${PORT:8080}`.
 - `CORS_ALLOWED_ORIGINS` — leave unset. The web is same-origin in prod, so CORS never triggers.

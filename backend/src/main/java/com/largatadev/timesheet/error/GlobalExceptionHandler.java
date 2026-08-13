@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
@@ -30,6 +31,17 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status())
 				.body(ErrorEnvelope.of(ErrorCode.VALIDATION_FAILED, "Invalid query parameter",
 						Map.of(paramName, "could not be parsed")));
+	}
+
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ErrorEnvelope> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+		// The servlet container refuses an oversized part before any controller runs. Without
+		// this handler it would fall to the catch-all below and return 500 — and the Largata
+		// relay's store-and-forward loop retries until it sees a 2xx, so a permanently-oversized
+		// payload would be retried forever. A 400 tells it the report is bad, not the server.
+		return ResponseEntity.status(ErrorCode.VALIDATION_FAILED.status())
+				.body(ErrorEnvelope.of(ErrorCode.VALIDATION_FAILED, "Invalid report",
+						Map.of("screenshot", "must be at most 5 MB")));
 	}
 
 	@ExceptionHandler(NoResourceFoundException.class)

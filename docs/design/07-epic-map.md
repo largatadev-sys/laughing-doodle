@@ -251,6 +251,29 @@ one security surface (INV-2), which is untouched.
 
 ---
 
+## Epic 3: **Reports inbox** (Largata feedback → worklog)
+
+Validation signal fired 2026-08-13 (the team uses worklog daily; Largata has real users and
+no feedback channel). Largata users report problems/ideas in their app; Reports relay
+server-to-server into a worklog Inbox (fifth tab) where any Member triages them through
+`new · discuss · in progress · done · dismissed`. Reporters stay foreign (never worklog
+users); worklog owns screenshot bytes. **Worklog's half only** — the Largata-side form and
+store-and-forward relay are that repo's work, built to the wire contract.
+
+Design closed 2026-08-13: spec + tickets `docs/tickets/reports-inbox/` · ADR-010 (relay-only
+intake) · vocabulary in [02](02-domain-model.md). Stories = the six tracer-bullet tickets,
+blockers-first:
+
+- **Story 13** — Intake skeleton: text-only Report lands + team list ([ticket 01](../tickets/reports-inbox/issues/01-intake-skeleton.md))
+- **Story 14** — Inbox tab: fifth tab, badge, list ([ticket 02](../tickets/reports-inbox/issues/02-inbox-tab.md))
+- **Story 15** — Triage: status lifecycle + detail screen ([ticket 03](../tickets/reports-inbox/issues/03-status-lifecycle.md))
+- **Story 16** — Screenshots: intake/storage/serving ([ticket 04](../tickets/reports-inbox/issues/04-screenshots-pipeline.md))
+- **Story 17** — Screenshots in the inbox UI ([ticket 05](../tickets/reports-inbox/issues/05-screenshots-inbox-ui.md))
+- **Story 18** — Ship: environments, smoke, deploy ([ticket 06](../tickets/reports-inbox/issues/06-ship-and-bookkeeping.md))
+
+Stories 13–17 built 2026-08-13 (tests green, verified live locally); Story 18's file work is
+done and the prod promotion is the remaining step. Status of record: [BUILD_STATUS](../../BUILD_STATUS.md).
+
 ## Backlog epics (placeholders — post-validation, signal-driven)
 
 - **Projects** — optional `project_id` on entries + admin project management (additive; ADR-007).

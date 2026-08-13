@@ -2,6 +2,8 @@ import type {
   CreateEntryRequest,
   EntryResponse,
   LoginResponse,
+  ReportResponse,
+  ReportStatus,
   UpdateEntryRequest,
   UserSummary,
 } from './types';
@@ -111,5 +113,22 @@ export const apiClient = {
 
   deleteEntry(id: number, token: string): Promise<void> {
     return request<void>(`/api/entries/${id}`, { method: 'DELETE', token });
+  },
+
+  // Reports inbox. There is no counts endpoint by design — the tab badge is derived from
+  // this list, since the volume is trivial (spec: "no counts endpoint").
+  listReports(params: { status?: ReportStatus }, token: string): Promise<ReportResponse[]> {
+    const qs = params.status ? `?status=${params.status}` : '';
+    return request<ReportResponse[]>(`/api/reports${qs}`, { token });
+  },
+
+  // The inbox's only write. Who made the change is taken from the token server-side, so it
+  // is deliberately absent from the body.
+  updateReportStatus(id: string, status: ReportStatus, token: string): Promise<ReportResponse> {
+    return request<ReportResponse>(`/api/reports/${id}/status`, {
+      method: 'PUT',
+      body: { status },
+      token,
+    });
   },
 };

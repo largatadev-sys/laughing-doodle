@@ -14,6 +14,32 @@ invariants — so they are written here, once, authoritatively.
 - **Entry date** — the day the work was *done* (distinct from when the row was written).
 - **Shared visibility** — every Member can read every TimeEntry; writes are author-only.
 
+### Incoming feedback (Reports) — `[SETTLED 2026-08-13]`
+
+_Design closed 2026-08-13 (grilling → spec: `docs/tickets/reports-inbox/spec.md`;
+architecture: ADR-010). A Report is **about the Largata trip-planning app** (the sibling
+product), never about worklog itself._
+
+- **Report** — one piece of feedback from a Largata user: a `type` (**problem** — "something's
+  wrong" — or **idea** — "I have a suggestion"), free text, optional screenshot(s), and the
+  reporter's identity carried as **data**.
+- **Reporter** — the Largata user who filed a Report. **Foreign to worklog:** never a worklog
+  User, never authenticates here — their name/UID travel as fields on the Report. Keeps the
+  two user bases fully separate.
+- **Inbox** — the worklog surface where Reports land and get worked: a fifth tab (bug icon)
+  in the pill. Unlike TimeEntries, a Report has **no owner**: every Member reads and updates
+  any Report equally.
+- **Report status** — `new` (arrived, untouched) · `discuss` (UI "For discussion" — parked
+  for a founders' decision) · `in progress` · `done` · `dismissed` (won't act). Free
+  movement between statuses, any Member; who-last-changed + when is recorded. No
+  assignment, no comments, no deletion — Reports are kept forever.
+- **Screenshots** — optional, ≤3 per Report; the **bytes travel with the Report** through
+  the relay (Largata's backend sanitizes/downsizes first) and **worklog owns its copy** —
+  rendering the Inbox never depends on Largata being up.
+- **The relay** — a Report reaches worklog only via Largata's backend, server-to-server,
+  authenticated by a shared secret. Reporters are fire-and-forget: no status ever flows
+  back to them in v1.
+
 ## High-level flow (the journey — narrative, not screens)
 
 **Member:** `log in → create a TimeEntry (date, duration, description) → it appears in

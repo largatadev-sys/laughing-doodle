@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ComposeButton, TabBarButton } from '@/components/nav/TabBar';
 import { TabTransition } from '@/components/nav/TabTransition';
+import { useReports } from '@/lib/reports';
 import { colors, radius, shadow, space, TAB_BAR_HEIGHT } from '@/theme';
 
 // Headless tabs (expo-router/ui) so the bar can be a fully custom floating red pill with a
@@ -12,6 +13,7 @@ import { colors, radius, shadow, space, TAB_BAR_HEIGHT } from '@/theme';
 // visible triggers reference them by name and forward `isFocused` for the active halo.
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { newCount } = useReports();
   return (
     <Tabs>
       <TabTransition>
@@ -29,6 +31,11 @@ export default function TabsLayout() {
             <TabBarButton icon="calendar" a11y="Calendar" />
           </TabTrigger>
           <ComposeButton onPress={() => router.push('/new')} />
+          <TabTrigger name="reports" asChild>
+            {/* The badge counts reports nobody has triaged yet, so incoming Largata
+                feedback is visible from any screen — see ReportsProvider. */}
+            <TabBarButton icon="alert-circle" a11y="Reports" badge={newCount} />
+          </TabTrigger>
           <TabTrigger name="profile" asChild>
             <TabBarButton icon="user" a11y="Profile" />
           </TabTrigger>
@@ -38,6 +45,7 @@ export default function TabsLayout() {
       <TabList style={styles.hiddenList}>
         <TabTrigger name="home" href="/" />
         <TabTrigger name="calendar" href="/calendar" />
+        <TabTrigger name="reports" href="/reports" />
         <TabTrigger name="profile" href="/profile" />
       </TabList>
     </Tabs>

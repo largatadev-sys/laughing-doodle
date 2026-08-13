@@ -2,9 +2,12 @@ package com.largatadev.timesheet.auth;
 
 import java.util.List;
 
+import com.largatadev.timesheet.error.ErrorResponseWriter;
+import com.largatadev.timesheet.reports.IntakeSecretFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -51,7 +54,37 @@ public class SecurityConfig {
 		return source;
 	}
 
+	/**
+	 * The relay intake route, authenticated by a shared secret instead of a JWT (ADR-010).
+	 * It is its own chain, ordered ahead of the JWT chain, so the two schemes are physically
+	 * separate: the JWT filter never runs here, and this filter never runs on a team route.
+	 * A Member's bearer token therefore cannot open intake, and the secret cannot open
+	 * anything else.
+	 */
 	@Bean
+	@Order(1)
+	public SecurityFilterChain intakeFilterChain(
+			HttpSecurity http,
+			@Value("${reports.intake-secret}") String intakeSecret,
+			ErrorResponseWriter errorResponseWriter) throws Exception {
+
+		IntakeSecretFilter intakeSecretFilter = new IntakeSecretFilter(intakeSecret, errorResponseWriter);
+
+		http
+				.securityMatcher("/api/intake/**")
+				.csrf(AbstractHttpConfigurer::disable)
+				// No CORS entry: intake is server-to-server only. A browser must not be able to
+				// reach it even with the secret in hand.
+				.cors(AbstractHttpConfigurer::disable)
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+				.addFilterBefore(intakeSecretFilter, UsernamePasswordAuthenticationFilter.class);
+
+		return http.build();
+	}
+
+	@Bean
+	@Order(2)
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.csrf(AbstractHttpConfigurer::disable)

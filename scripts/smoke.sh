@@ -26,6 +26,21 @@ curl -s --max-time 20 "$BASE/" | grep -q '/_expo/static/js/web/entry-' && ok "GE
 [ "$(code "$BASE/nope.js")" = 404 ] && ok "missing asset -> 404" || no "missing asset 404"
 [ "$(code "$BASE/api/entries")" = 401 ] && ok "GET /api/entries no token -> 401" || no "/api 401 boundary"
 
+echo "-- reports intake (relay-only surface, ADR-010) --"
+# Only the REJECTION paths are probed, deliberately: a happy-path probe would write a junk
+# report into the team's live inbox. That the accept path works is proven by the endpoint
+# tests (worklog's contract tests for the Largata wire contract), not from here.
+# An empty multipart body is enough: the secret is checked in a filter, well before any part
+# is read, so a rejected caller never reaches the parser.
+intake(){ code -X POST "$BASE/api/intake/reports" -H 'Content-Type: multipart/form-data; boundary=smoke' "$@"; }
+[ "$(intake)" = 401 ] && ok "POST /api/intake/reports no secret -> 401" || no "intake unauth boundary" "$(intake)"
+[ "$(intake -H 'X-Intake-Secret: not-the-secret')" = 401 ] \
+  && ok "POST /api/intake/reports wrong secret -> 401" || no "intake wrong-secret boundary"
+# The team-facing inbox is ordinary bearer-JWT territory; the two schemes must not bleed.
+[ "$(code "$BASE/api/reports")" = 401 ] && ok "GET /api/reports no token -> 401" || no "/api/reports 401 boundary"
+[ "$(code "$BASE/api/reports" -H 'X-Intake-Secret: not-the-secret')" = 401 ] \
+  && ok "intake secret does not open /api/reports" || no "auth schemes bleed"
+
 echo "-- CORS behind TLS proxy (the trap that reached prod) --"
 # A same-origin browser POST carries an Origin header. Behind a proxy that terminates TLS,
 # the app must honor X-Forwarded-Proto to recognize it as same-origin (else -> 403 CORS).

@@ -179,5 +179,28 @@ on-demand full-stack parity gate. The fast native daily loop this ADR protects i
 - *Invalidates it.* A second backend service/JVM module, or a genuine need to build both peers
   from one root command, → reconsider the root multi-project (or a proper monorepo tool).
 
+**ADR-010 — Reports intake is relay-only (shared-secret, server-to-server).**
+- *Context.* The Reports inbox (spec: `docs/tickets/reports-inbox/`) receives feedback
+  from users of the sibling product **Largata** — a different app, different domain, and a
+  different auth system (Firebase; identities worklog knows nothing about). Worklog is
+  otherwise a private 4-user app whose every endpoint (bar login) sits behind its own JWT.
+- *Decision.* Reports enter worklog **only** via Largata's backend: phone → Largata
+  (Firebase-authenticated, store-and-forward with retry) → server-to-server
+  `POST /api/intake/reports`, authenticated by a shared secret (`REPORTS_INTAKE_SECRET`,
+  env var on both sides, constant-time compare, rotate by redeploy). Intake is idempotent
+  on a client-minted report UUID so retries are safe. Reporters stay **foreign**: their
+  identity travels as data on the Report; they never become worklog users.
+- *Alternatives rejected.* (1) The Largata mobile app posting **directly** to a worklog
+  endpoint — either the endpoint is open to the public internet (spam/flood into a private
+  team app) or worklog must validate Firebase tokens (permanently couples worklog to
+  Largata's auth project and SDK). (2) Linking to screenshots hosted in Largata's storage —
+  impossible: Largata's media reads are authenticated-proxy-only (its ADR-021), so worklog
+  receives and **owns** the screenshot bytes instead.
+- *Assumption.* One trusted caller at trivial volume — a static secret is proportionate;
+  HMAC request-signing, mTLS, or an API-gateway product would be ceremony.
+- *Invalidates it.* A second reporting source, reporter-facing status ("what happened to
+  my report?"), or real abuse pressure → revisit toward per-source credentials or a
+  queue between the two systems.
+
 **Deferred (until validated).** Caching, read replicas, async/queues, rate limiting,
 real observability — explicitly **not** decided now; revisit signal-driven post-validation.
