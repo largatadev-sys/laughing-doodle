@@ -120,11 +120,10 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 17  | Screenshots in the inbox UI                                  | ✅     | [05](docs/tickets/reports-inbox/issues/05-screenshots-inbox-ui.md) |
 | 18  | Ship: environments, smoke, deploy                            | 🔄     | [06](docs/tickets/reports-inbox/issues/06-ship-and-bookkeeping.md) |
 
-**Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning`, **19 commits, not
-yet squashed into `dev`** — the six tickets, then a second pass implementing the Claude Design
-package, then UI bug fixes (including one revert pair that cancels out; the squash is what
-tidies this). Backend suite green (42 reports tests among them); client typechecks and lints
-clean.
+**Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning` over 20 commits —
+the six tickets, then a second pass implementing the Claude Design package, then UI bug fixes —
+and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend suite green
+(42 reports tests among them); client typechecks and lints clean.
 
 - **Backend.** New `reports` module beside `auth`/`entries`/`users`, same layering. Migrations
   `V3__reports` (client-minted UUID PK = the idempotency key) and `V4__report_screenshots`
