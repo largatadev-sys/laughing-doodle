@@ -38,7 +38,10 @@ bundled image (Expo web + Spring API) + managed Postgres, HTTPS (ADR-008). MVP e
 end-to-end. **Prod tracks the repo's `main` branch** (Railway service connected to GitHub
 `main`) — promoting `dev` → `main` and pushing is the release act, so the pre-deploy ritual
 (local fullstack gate + `scripts/smoke.sh`) belongs **before the push to `main`**, and the
-post-deploy smoke + live check after it. Deploy runbook:
+post-deploy smoke + live check after it. **A `dev` Railway environment also exists**
+(<https://largata-ts-dev.up.railway.app>, auto-deploys from the `dev` branch) — added after the
+runbook was written, which still says there is no staging. Smoke `dev` before promoting.
+Deploy runbook:
 [docs/deploy/railway.md](docs/deploy/railway.md); pre/post-deploy check: `scripts/smoke.sh`.
 **In active team use since ~mid-July 2026** (developer-confirmed 2026-08-13).
 
@@ -118,7 +121,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 15  | Triage: status lifecycle + detail screen                     | ✅     | [03](docs/tickets/reports-inbox/issues/03-status-lifecycle.md) |
 | 16  | Screenshots: intake, storage, serving                        | ✅     | [04](docs/tickets/reports-inbox/issues/04-screenshots-pipeline.md) |
 | 17  | Screenshots in the inbox UI                                  | ✅     | [05](docs/tickets/reports-inbox/issues/05-screenshots-inbox-ui.md) |
-| 18  | Ship: environments, smoke, deploy                            | 🔄     | [06](docs/tickets/reports-inbox/issues/06-ship-and-bookkeeping.md) |
+| 18  | Ship: environments, smoke, deploy                            | ✅     | [06](docs/tickets/reports-inbox/issues/06-ship-and-bookkeeping.md) |
 
 **Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning` over 20 commits —
 the six tickets, then a second pass implementing the Claude Design package, then UI bug fixes —
@@ -176,11 +179,20 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
   it load?" signal said yes. (3) Multi-screenshot reports could not be paged with a mouse at
   all, since `react-native-web` only wires touch events into scrolling. **Lesson for the next
   UI story: check the rendered box and drive the real input, not the code path.**
-- **Story 18 remaining:** `dev` ← squash of this branch, `main` promotion, prod deploy with
-  `REPORTS_INTAKE_SECRET` set in Railway (byte-identical to Largata's), post-deploy smoke,
-  and the developer's real-browser check. Real end-to-end traffic only starts once the
-  Largata-side half ships in that repo — the spec's "Wire contract" section is that
-  session's starting input.
+- **Story 18 — shipped 2026-08-14.** `dev` squashed at `76f1e24`, promoted to `main`
+  (fast-forward, both at `631cbb4`), deployed to **dev and prod**. `REPORTS_INTAKE_SECRET` is
+  set in both Railway environments with **different values per environment**, so a
+  misconfigured Largata dev build cannot write into the prod inbox (it just 401s) — worth
+  keeping, since Reports are permanent and there is no delete endpoint.
+  - **A Railway dev environment now exists** (`largata-ts-dev.up.railway.app`, auto-deploys
+    from the `dev` branch) — new since the runbook was written, which still says there is no
+    staging. It earned its keep immediately: the whole feature was smoked there before prod.
+  - `scripts/smoke.sh` passes **11/11 on the local gate, on dev, and on prod**, including the
+    CORS-behind-TLS-proxy check — the Story 9 failure mode, and the first time it has been
+    exercised for this feature against real HTTPS rather than simulated headers.
+  - The developer confirmed the **Reports tab renders on dev** — the only probe that proves
+    V3/V4 actually ran, since every unauthenticated route 401s before touching the database
+    (the silent-Flyway trap: routes answering 401 rather than 404 proves wiring, not schema).
 
 ## Off-epic ledger
 

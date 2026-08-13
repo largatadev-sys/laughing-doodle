@@ -113,7 +113,17 @@ Then in a browser:
 - Railway keeps deploy history — roll back to a previous deploy from the service's Deployments tab.
 - A frontend or backend change is one redeploy of the same image (they're coupled by design, ADR-008).
 
+## Environments
+
+- **prod** — <https://worklog.largata.com>, tracks `main`. Pushing to `main` is the release act.
+- **dev** — <https://largata-ts-dev.up.railway.app>, tracks `dev`, auto-deploys on push. Added
+  2026-08-14 (Epic 3). **Smoke dev before promoting to `main`:** it is the only place the
+  CORS-behind-TLS-proxy path and a real Flyway migration run can be exercised against genuine
+  HTTPS without touching prod.
+
+Each environment holds its **own** `REPORTS_INTAKE_SECRET`, deliberately different, so a
+misconfigured Largata dev build cannot write into the prod inbox.
+
 ## Out of scope (deferred per Story 9)
 
-CI/CD (auto-deploy on push can be toggled in Railway later), monitoring/observability,
-backups/DR automation, a separate staging environment.
+CI/CD beyond Railway's branch auto-deploy, monitoring/observability, backups/DR automation.
