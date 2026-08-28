@@ -195,6 +195,7 @@ class UpdateReportStatusEndpointTest {
 				"largata-uid-1",
 				Platform.ANDROID,
 				"1.4.2",
+				"(tabs)/(home)",
 				OffsetDateTime.now(ZoneOffset.UTC).minusHours(3),
 				OffsetDateTime.now(ZoneOffset.UTC)));
 	}

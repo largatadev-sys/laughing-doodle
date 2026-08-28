@@ -202,5 +202,28 @@ on-demand full-stack parity gate. The fast native daily loop this ADR protects i
   my report?"), or real abuse pressure → revisit toward per-source credentials or a
   queue between the two systems.
 
+**ADR-011 — Intake contract v1.1: optional reporter identity; screen as opaque data.**
+- *Context.* 2026-08-28. Largata is making its report entry point globally visible —
+  every screen, signed-out ones included — and wants each Report to carry the screen the
+  user was on. Both were contract changes to ADR-010's surface, made while the Largata
+  relay was still unbuilt (non-breaking). Spec: `docs/tickets/reports-inbox/spec.md`,
+  "Amendments → v1.1".
+- *Decision.* (1) `reporter` becomes optional, per-field, stored as sent — signed-out
+  screens have no identity, and they are where "I can't get in" bugs live; the inbox
+  renders the absence honestly ("Signed out"). (2) `context.screen` joins as an optional
+  opaque string (≤200 chars), defined as *where the reporter was when they opened the
+  report flow*; worklog never validates it against Largata's route table. Guiding rule:
+  under store-and-forward, every `400` is a silently lost report, so intake only requires
+  what worklog cannot represent the absence of.
+- *Alternatives rejected.* Largata synthesizing an anonymous identity (device id +
+  placeholder name) keeps the contract frozen but plants fake reporters in permanent,
+  undeletable data — indistinguishable from real ones the day anyone counts distinct
+  reporters. Requiring `screen`, or validating its shape, couples worklog to Largata's
+  route table: a rename there becomes a lost report or a forced deploy here.
+- *Assumption.* Anonymous reports stay rare and benign — the relay secret still gates the
+  door, so "anonymous" means a signed-out Largata user, not the public internet.
+- *Invalidates it.* Anonymous-report abuse (no uid to correlate) → revisit toward
+  requiring identity on signed-in screens plus rate limiting at the relay.
+
 **Deferred (until validated).** Caching, read replicas, async/queues, rate limiting,
 real observability — explicitly **not** decided now; revisit signal-driven post-validation.

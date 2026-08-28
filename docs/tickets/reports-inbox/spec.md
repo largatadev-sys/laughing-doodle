@@ -2,6 +2,10 @@
 
 Status: ready-for-agent
 Date: 2026-08-13
+Amended: 2026-08-28 — contract **v1.1** (screen context + signed-out reporters), grilled
+and signed off in-session (the schema change's stop-rule ask). See "Amendments" at the end;
+the contract sections below are edited in place to v1.1 — this spec stays the single
+hand-off artifact for the Largata repo.
 Origin: grilling session 2026-08-13 (design confirmed by the developer; the confirmation
 is the explicit sign-off both stop-rules require — new schema, new authenticated surface).
 Scope: **worklog's half only.** The Largata-side half (report form, accept endpoint,
@@ -62,7 +66,9 @@ instant thank-you in Largata and never see worklog.
 - One new entity, **Report**: client-minted UUID id (the idempotency key) · type
   (`problem | idea`) · description (required, 1–2000 chars, no title field) · reporter
   name + reporter uid (opaque strings from Largata — **foreign identity as data**, never a
-  worklog User) · platform (`android | ios | web`) · app version · `submittedAt` (stamped
+  worklog User; **both optional since v1.1** — absent when filed from a signed-out screen)
+  · platform (`android | ios | web`) · app version · screen (optional, ≤200 chars — v1.1,
+  opaque) · `submittedAt` (stamped
   by Largata when the user submitted) · `receivedAt` (stamped by worklog on arrival —
   store-and-forward means these differ) · status · status-changed-by (worklog user) +
   status-changed-at · 0–3 screenshots.
@@ -89,8 +95,23 @@ instant thank-you in Largata and never see worklog.
 - **`POST /api/intake/reports`** — multipart/form-data:
   - part `report` (application/json): `{ "reportId": "<uuid>", "type": "problem"|"idea",
     "description": "<1–2000 chars>", "reporter": { "name": "...", "uid": "..." },
-    "context": { "platform": "android"|"ios"|"web", "appVersion": "..." },
-    "submittedAt": "<ISO-8601 instant>" }`
+    "context": { "platform": "android"|"ios"|"web", "appVersion": "...",
+    "screen": "<optional, ≤200 chars>" }, "submittedAt": "<ISO-8601 instant>" }`
+  - The `report` part must be a **file** part — a filename in its `Content-Disposition`
+    (curl: `-F "report=@report.json;type=application/json"`). A bare form field is
+    rejected as a missing part (found the hard way during the v1.1 live check).
+  - `reporter` (v1.1): **optional, per-field** — absent when the report was filed from a
+    signed-out screen (sign-in, onboarding, invite links). Name and uid are independently
+    optional and stored as sent: a half-sent identity is a Largata bug, never a `400` —
+    under store-and-forward a `400` is a silently lost report. The inbox shows a missing
+    name as "Signed out".
+  - `context.screen` (v1.1): **optional, ≤200 chars** — *the screen the reporter was on
+    when they opened the report flow* (not where the bug happened — no client can know
+    that). How Largata identifies a screen (route pattern vs. human label) is that repo's
+    call, made against this sentence; worklog treats the value as opaque — no format
+    validation, never checked against a route table, rendered verbatim in the inbox.
+    Capture it when the report flow *opens*: read at submit time, a pushed report route
+    would record the report form itself, every time.
   - parts `screenshot` (0–3 files): JPEG/PNG, ≤ 5 MB each (Largata sends its sanitized,
     downsized display variant — EXIF-stripped, ≤2048px).
 - **Auth:** header `X-Intake-Secret: <secret>` — a long random value in an env var on both
@@ -101,7 +122,8 @@ instant thank-you in Largata and never see worklog.
 - **Idempotency:** first accept of a `reportId` → `201` with the report; any replay of the
   same `reportId` → `200` with the already-stored report, no second row, no screenshot
   re-write. Validation failure → `400` with the field-level envelope; oversized/malformed
-  images → `400`.
+  images → `400`. Envelope keys for context fields are dotted (v1.1): `context.platform`,
+  `context.appVersion`, `context.screen` — matching `reporter.name` / `reporter.uid`.
 - Delivery guarantees are Largata's job (store-and-forward with retry until a 2xx);
   worklog's job is only that replays are safe.
 
@@ -172,7 +194,8 @@ instant thank-you in Largata and never see worklog.
   session, built to the wire contract above.
 - Reporter feedback loop (no status back to the reporter, no "my reports" screen),
   comments, assignment, priorities, labels beyond status, report deletion or editing,
-  push/email notifications, capture of which screen the reporter was on, worklog-side
+  push/email notifications, ~~capture of which screen the reporter was on~~ (**in scope
+  since v1.1**, 2026-08-28 — see Amendments), worklog-side
   Firebase anything, a public/unauthenticated worklog endpoint of any kind, object
   storage, pagination (volume is trivial; conventions define the pattern when needed),
   admin-only gating of any inbox action.
@@ -192,3 +215,38 @@ instant thank-you in Largata and never see worklog.
 - **Hand-off artifact for the Largata repo:** the "Wire contract" section above is the
   interface. The Largata-side session should receive this spec (or that section verbatim)
   as its starting input.
+
+## Amendments
+
+### v1.1 — Screen context + signed-out reporters (2026-08-28)
+
+Grilled 2026-08-28; the schema change was signed off by the developer in-session (the
+stop-rule ask). Trigger: Largata plans a **globally visible** tracker entry point — every
+screen, signed-out ones included — and wants each report to carry where the user was.
+Both halves were still soft (the Largata relay is unbuilt), so the loosenings below are
+non-breaking; they freeze once that repo ships. Recorded as **ADR-011**; story/ticket:
+Story 19 / [ticket 07](issues/07-intake-contract-v1-1.md).
+
+- **`context.screen` — new, optional, ≤200 chars.** Defined as *the screen the reporter
+  was on when they opened the report flow* — captured at open, not submit (a pushed report
+  route read at submit records the report form itself); and not "where the bug happened",
+  which no client can know. Opaque to worklog: no format validation, never checked against
+  a route table — a Largata route rename must never cost a report or force a worklog
+  deploy. Whether Largata sends a route pattern or a human label is that repo's decision.
+  Absent → stored null; the inbox simply omits the row.
+- **`reporter` — now optional, per-field.** Signed-out screens (sign-in, verify-code,
+  onboarding, `join/[token]`) have no identity to send, and they are precisely where
+  "I can't get in" bugs live. Name and uid are independently optional, stored as sent —
+  a half-sent identity is never a `400`, because under store-and-forward every `400` is a
+  silently lost report (user story 6). The inbox renders a missing name as "Signed out".
+  **Rejected:** Largata synthesizing an anonymous identity (device id + placeholder name)
+  — it keeps the contract frozen but plants fake reporters in permanent, undeletable data,
+  indistinguishable from real ones the day anyone counts distinct reporters.
+- **Envelope keys normalised.** Context-field validation details are now dotted —
+  `context.platform` / `context.appVersion` / `context.screen` — matching
+  `reporter.name` / `reporter.uid`. Free while nothing consumes the envelope; frozen the
+  moment Largata ships error handling against it.
+
+Schema: migration `V5` — `reports.screen VARCHAR(200) NULL`; `reporter_name` /
+`reporter_uid` drop `NOT NULL`. Statuses, idempotency, screenshots, both auth schemes:
+untouched. The intake tests remain the contract tests and pin all of the above.

@@ -18,6 +18,6 @@ public record IntakePayload(
 	public record Reporter(String name, String uid) {
 	}
 
-	public record Context(String platform, String appVersion) {
+	public record Context(String platform, String appVersion, String screen) {
 	}
 }

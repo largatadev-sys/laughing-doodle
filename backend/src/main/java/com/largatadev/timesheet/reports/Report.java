@@ -31,10 +31,12 @@ public class Report implements Persistable<UUID> {
 	@Column(nullable = false)
 	private String description;
 
-	@Column(name = "reporter_name", nullable = false)
+	// Nullable since contract v1.1: a report filed from a signed-out Largata screen carries
+	// no identity at all — and those screens are where "I can't get in" bugs live.
+	@Column(name = "reporter_name")
 	private String reporterName;
 
-	@Column(name = "reporter_uid", nullable = false)
+	@Column(name = "reporter_uid")
 	private String reporterUid;
 
 	@Column(nullable = false)
@@ -42,6 +44,11 @@ public class Report implements Persistable<UUID> {
 
 	@Column(name = "app_version", nullable = false)
 	private String appVersion;
+
+	/** Where the reporter was when they opened the report flow — an opaque Largata-minted
+	 * string (contract v1.1), never validated against that app's route table. */
+	@Column
+	private String screen;
 
 	@Column(name = "submitted_at", nullable = false)
 	private OffsetDateTime submittedAt;
@@ -68,7 +75,8 @@ public class Report implements Persistable<UUID> {
 	}
 
 	public Report(UUID id, ReportType type, String description, String reporterName, String reporterUid,
-			Platform platform, String appVersion, OffsetDateTime submittedAt, OffsetDateTime receivedAt) {
+			Platform platform, String appVersion, String screen, OffsetDateTime submittedAt,
+			OffsetDateTime receivedAt) {
 		this.id = id;
 		this.type = type;
 		this.description = description;
@@ -76,6 +84,7 @@ public class Report implements Persistable<UUID> {
 		this.reporterUid = reporterUid;
 		this.platform = platform;
 		this.appVersion = appVersion;
+		this.screen = screen;
 		this.submittedAt = submittedAt;
 		this.receivedAt = receivedAt;
 		this.status = ReportStatus.NEW;
@@ -122,6 +131,10 @@ public class Report implements Persistable<UUID> {
 
 	public String getAppVersion() {
 		return appVersion;
+	}
+
+	public String getScreen() {
+		return screen;
 	}
 
 	public OffsetDateTime getSubmittedAt() {

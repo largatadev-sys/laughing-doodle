@@ -27,6 +27,9 @@ export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
   const when = activityLabel(report.submittedAt, report.submittedAt).when;
   const tone = STATUS_TONES[report.status];
   const shots = report.screenshotOrdinals.length;
+  // A signed-out reporter is shown honestly, not hidden — auth screens are exactly where
+  // "I can't get in" reports come from (contract v1.1).
+  const reporter = report.reporterName ?? 'Signed out';
 
   return (
     <View style={styles.rowWrap}>
@@ -37,7 +40,7 @@ export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
         accessibilityRole="button"
         accessibilityLabel={[
           report.type === 'problem' ? 'Problem' : 'Idea',
-          `from ${report.reporterName},`,
+          `from ${reporter},`,
           STATUS_LABELS[report.status],
           shots > 0 ? `, ${shots} screenshot${shots > 1 ? 's' : ''}` : '',
         ].join(' ')}
@@ -67,7 +70,7 @@ export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
             {report.description}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
-            {report.reporterName} · {platformShort(report)} · {when}
+            {reporter} · {platformShort(report)} · {when}
             {shots > 0 ? ` · ${shots} shot${shots > 1 ? 's' : ''}` : ''}
           </Text>
         </View>

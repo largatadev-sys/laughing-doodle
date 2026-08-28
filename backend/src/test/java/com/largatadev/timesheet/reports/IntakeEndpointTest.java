@@ -82,6 +82,7 @@ class IntakeEndpointTest {
 				.andExpect(jsonPath("$.reporterUid").value("largata-uid-1"))
 				.andExpect(jsonPath("$.platform").value("android"))
 				.andExpect(jsonPath("$.appVersion").value("1.4.2"))
+				.andExpect(jsonPath("$.screen").value("(tabs)/(trips)/itineraries/[id]"))
 				.andExpect(jsonPath("$.status").value("new"))
 				.andExpect(jsonPath("$.submittedAt").isNotEmpty())
 				.andExpect(jsonPath("$.receivedAt").isNotEmpty())
@@ -233,7 +234,7 @@ class IntakeEndpointTest {
 						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-				.andExpect(jsonPath("$.error.details.platform").exists());
+				.andExpect(jsonPath("$.error.details['context.platform']").exists());
 
 		assertThat(reportRepository.count()).isZero();
 	}
@@ -272,20 +273,86 @@ class IntakeEndpointTest {
 	}
 
 	@Test
-	void missingReporterIdentityReturns400WithFieldDetails() throws Exception {
+	void signedOutReporterIsAcceptedWithNullIdentity() throws Exception {
+		// v1.1: the tracker shows on signed-out Largata screens too — no reporter to send.
+		UUID reportId = UUID.randomUUID();
 		String json = """
-				{"reportId":"%s","type":"idea","description":"Anonymous attempt.",
+				{"reportId":"%s","type":"problem","description":"The invite link did nothing.",
+				 "context":{"platform":"web","appVersion":"1.4.2","screen":"join/[token]"},
+				 "submittedAt":"2026-08-12T09:15:30Z"}
+				""".formatted(reportId);
+
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(json))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.reporterName").value(nullValue()))
+				.andExpect(jsonPath("$.reporterUid").value(nullValue()))
+				.andExpect(jsonPath("$.screen").value("join/[token]"));
+
+		Report stored = reportRepository.findById(reportId).orElseThrow();
+		assertThat(stored.getReporterName()).isNull();
+		assertThat(stored.getReporterUid()).isNull();
+	}
+
+	@Test
+	void partialReporterIdentityIsStoredAsSent() throws Exception {
+		// Name and uid are independently optional: a half-sent identity is a Largata bug,
+		// and under store-and-forward a 400 here would silently lose the feedback.
+		UUID reportId = UUID.randomUUID();
+		String json = """
+				{"reportId":"%s","type":"idea","description":"Half an identity.",
+				 "reporter":{"name":"Ada Traveler"},
 				 "context":{"platform":"web","appVersion":"1.4.2"},
 				 "submittedAt":"2026-08-12T09:15:30Z"}
-				""".formatted(UUID.randomUUID());
+				""".formatted(reportId);
+
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(json))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.reporterName").value("Ada Traveler"))
+				.andExpect(jsonPath("$.reporterUid").value(nullValue()));
+	}
+
+	@Test
+	void missingScreenIsAcceptedAndStoredAsNull() throws Exception {
+		// screen is optional forever: older Largata builds linger in the field, and a
+		// required field would turn their reports into permanently retried 400s.
+		UUID reportId = UUID.randomUUID();
+		String json = """
+				{"reportId":"%s","type":"idea","description":"Pre-v1.1 build shape.",
+				 "reporter":{"name":"Ada Traveler","uid":"largata-uid-1"},
+				 "context":{"platform":"android","appVersion":"1.4.2"},
+				 "submittedAt":"2026-08-12T09:15:30Z"}
+				""".formatted(reportId);
+
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(json))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.screen").value(nullValue()));
+
+		assertThat(reportRepository.findById(reportId).orElseThrow().getScreen()).isNull();
+	}
+
+	@Test
+	void overlongScreenReturns400WithFieldDetail() throws Exception {
+		String json = """
+				{"reportId":"%s","type":"problem","description":"Screen too long.",
+				 "reporter":{"name":"Ada Traveler","uid":"largata-uid-1"},
+				 "context":{"platform":"android","appVersion":"1.4.2","screen":"%s"},
+				 "submittedAt":"2026-08-12T09:15:30Z"}
+				""".formatted(UUID.randomUUID(), "s".repeat(201));
 
 		mockMvc.perform(multipart("/api/intake/reports")
 						.file(reportPart(json))
 						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
-				.andExpect(jsonPath("$.error.details['reporter.name']").exists())
-				.andExpect(jsonPath("$.error.details['reporter.uid']").exists());
+				.andExpect(jsonPath("$.error.details['context.screen']").exists());
+
+		assertThat(reportRepository.count()).isZero();
 	}
 
 	@Test
@@ -314,11 +381,12 @@ class IntakeEndpointTest {
 
 	static String payload(UUID reportId, String type, String description) {
 		// Hand-built rather than serialized from a DTO: this is the wire shape Largata sends,
-		// so the test should break if the shape drifts, not follow it.
+		// so the test should break if the shape drifts, not follow it. (v1.1 shape: context
+		// carries the optional screen.)
 		return """
 				{"reportId":"%s","type":"%s","description":"%s",
 				 "reporter":{"name":"Ada Traveler","uid":"largata-uid-1"},
-				 "context":{"platform":"android","appVersion":"1.4.2"},
+				 "context":{"platform":"android","appVersion":"1.4.2","screen":"(tabs)/(trips)/itineraries/[id]"},
 				 "submittedAt":"2026-08-12T09:15:30Z"}
 				""".formatted(reportId, type, description.replace("\\", "\\\\").replace("\"", "\\\""));
 	}

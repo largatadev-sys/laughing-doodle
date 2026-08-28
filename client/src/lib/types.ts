@@ -48,10 +48,14 @@ export interface ReportResponse {
   id: string;
   type: ReportType;
   description: string;
-  reporterName: string;
-  reporterUid: string;
+  /** Null when the report was filed from a signed-out Largata screen (contract v1.1). */
+  reporterName: string | null;
+  reporterUid: string | null;
   platform: ReportPlatform;
   appVersion: string;
+  /** Where the reporter was when they opened the report flow — an opaque Largata-minted
+   *  string; null on reports from builds that don't send it (contract v1.1). */
+  screen: string | null;
   /** When the reporter hit send. Display and sort key — a retried relay must not reorder. */
   submittedAt: string;
   /** When worklog received it; later than submittedAt whenever delivery was retried. */
