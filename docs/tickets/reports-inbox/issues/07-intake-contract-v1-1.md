@@ -13,8 +13,9 @@ inbox with a Screen row and a "Signed out" reporter.
 
 **Status:** done — tests green (45/45 reports suite), developer verified all three report
 shapes live in the browser 2026-08-28 (local bootRun + Expo web; real Flyway V5 run
-confirmed in `flyway_schema_history`). Squashed to `dev` (SHA in BUILD_STATUS). Prod
-promotion rides the next dev → main cycle; no new env vars anywhere.
+confirmed in `flyway_schema_history`). Squashed to `dev` (SHA in BUILD_STATUS), promoted
+to `main` and deployed to dev + prod 2026-08-28 — smoke ALL PASS on both, v1.1 bundle
+confirmed live; needs the developer's browser check on prod. No new env vars anywhere.
 
 - [x] Migration V5: `reports.screen VARCHAR(200) NULL`; `reporter_name` / `reporter_uid`
       drop NOT NULL. No other schema change.

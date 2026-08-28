@@ -203,9 +203,14 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
   `screen`); ADR-011; spec amended in place ("Amendments → v1.1") and stays the Largata
   hand-off artifact. No new env vars. Tests 45/45 (reports suite); verified live locally
   2026-08-28 — real Flyway V5 run + the developer's browser check of all three report
-  shapes (v1.1 / signed-out / pre-v1.1). The `dev` Railway env auto-deploys this push:
-  its V5 run is proven by login → Reports tab rendering there (the 401-before-DB trap);
-  prod promotion rides the next dev → main cycle.
+  shapes (v1.1 / signed-out / pre-v1.1). **Promoted to `main` (fast-forward, both at
+  `edda09f`) and deployed to dev and prod the same day.** `scripts/smoke.sh` ALL PASS on
+  both environments, including the CORS-behind-TLS-proxy check; the served JS bundle on
+  both carries the v1.1 "Signed out" marker (same bundle hash), proving the new build is
+  live — and a booted Spring means Flyway applied V5 to each database. Automated checks
+  pass; **the developer's live check (browser login → Reports tab) on prod is the
+  remaining verification** per the standing deploy rule. Real v1.1 traffic starts when
+  the Largata-side relay ships (starting input: the amended spec).
 
 ## Off-epic ledger
 
