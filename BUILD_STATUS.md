@@ -194,7 +194,7 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
   - The developer confirmed the **Reports tab renders on dev** — the only probe that proves
     V3/V4 actually ran, since every unauthenticated route 401s before touching the database
     (the silent-Flyway trap: routes answering 401 rather than 404 proves wiring, not schema).
-- **Story 19 — done (2026-08-28), squashed into `dev` at `TBD-set-post-squash`.** Contract
+- **Story 19 — done (2026-08-28), squashed into `dev` at `00bc10a`.** Contract
   v1.1, grilled and signed off in-session ahead of the Largata-side relay build: Largata's
   tracker entry point goes globally visible (signed-out screens included) and reports carry
   the screen the reporter was on. `context.screen` (optional, ≤200 chars, opaque — never
