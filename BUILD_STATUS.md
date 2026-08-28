@@ -122,6 +122,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 16  | Screenshots: intake, storage, serving                        | ✅     | [04](docs/tickets/reports-inbox/issues/04-screenshots-pipeline.md) |
 | 17  | Screenshots in the inbox UI                                  | ✅     | [05](docs/tickets/reports-inbox/issues/05-screenshots-inbox-ui.md) |
 | 18  | Ship: environments, smoke, deploy                            | ✅     | [06](docs/tickets/reports-inbox/issues/06-ship-and-bookkeeping.md) |
+| 19  | Intake contract v1.1: screen context + signed-out reporters  | ✅     | [07](docs/tickets/reports-inbox/issues/07-intake-contract-v1-1.md) |
 
 **Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning` over 20 commits —
 the six tickets, then a second pass implementing the Claude Design package, then UI bug fixes —
@@ -193,6 +194,18 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
   - The developer confirmed the **Reports tab renders on dev** — the only probe that proves
     V3/V4 actually ran, since every unauthenticated route 401s before touching the database
     (the silent-Flyway trap: routes answering 401 rather than 404 proves wiring, not schema).
+- **Story 19 — done (2026-08-28), squashed into `dev` at `TBD-set-post-squash`.** Contract
+  v1.1, grilled and signed off in-session ahead of the Largata-side relay build: Largata's
+  tracker entry point goes globally visible (signed-out screens included) and reports carry
+  the screen the reporter was on. `context.screen` (optional, ≤200 chars, opaque — never
+  validated against Largata's routes) + optional per-field `reporter` (inbox shows "Signed
+  out") + dotted `context.*` envelope keys. Migration **V5** (nullable reporter columns +
+  `screen`); ADR-011; spec amended in place ("Amendments → v1.1") and stays the Largata
+  hand-off artifact. No new env vars. Tests 45/45 (reports suite); verified live locally
+  2026-08-28 — real Flyway V5 run + the developer's browser check of all three report
+  shapes (v1.1 / signed-out / pre-v1.1). The `dev` Railway env auto-deploys this push:
+  its V5 run is proven by login → Reports tab rendering there (the 401-before-DB trap);
+  prod promotion rides the next dev → main cycle.
 
 ## Off-epic ledger
 

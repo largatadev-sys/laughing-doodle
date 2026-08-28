@@ -137,6 +137,7 @@ class ListReportsEndpointTest {
 				"largata-uid-1",
 				Platform.ANDROID,
 				"1.4.2",
+				"(tabs)/(home)",
 				submittedAt,
 				OffsetDateTime.now(ZoneOffset.UTC));
 		return reportRepository.save(report);

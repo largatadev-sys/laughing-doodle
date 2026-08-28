@@ -93,8 +93,11 @@ export default function ReportDetail() {
           <ReportScreenshots reportId={report.id} ordinals={report.screenshotOrdinals} />
 
           <Card style={styles.metaCard}>
-            <MetaRow label="Reporter" value={report.reporterName} />
+            <MetaRow label="Reporter" value={report.reporterName ?? 'Signed out'} />
             <MetaRow label="Platform" value={platformLabel(report.platform, report.appVersion)} />
+            {/* Where they were when they opened the report flow — Largata's wording,
+                rendered verbatim; absent on reports from builds that don't send it. */}
+            {report.screen && <MetaRow label="Screen" value={report.screen} />}
             <MetaRow label="Submitted" value={activityLabel(report.submittedAt, report.submittedAt).when} />
             {/* Received differs from submitted whenever Largata had to retry delivery. */}
             <MetaRow label="Received" value={activityLabel(report.receivedAt, report.receivedAt).when} />

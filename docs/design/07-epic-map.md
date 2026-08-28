@@ -270,9 +270,14 @@ blockers-first:
 - **Story 16** — Screenshots: intake/storage/serving ([ticket 04](../tickets/reports-inbox/issues/04-screenshots-pipeline.md))
 - **Story 17** — Screenshots in the inbox UI ([ticket 05](../tickets/reports-inbox/issues/05-screenshots-inbox-ui.md))
 - **Story 18** — Ship: environments, smoke, deploy ([ticket 06](../tickets/reports-inbox/issues/06-ship-and-bookkeeping.md))
+- **Story 19** — Intake contract v1.1: screen context + signed-out reporters
+  ([ticket 07](../tickets/reports-inbox/issues/07-intake-contract-v1-1.md) · ADR-011 ·
+  spec "Amendments"). Added 2026-08-28, ahead of the Largata-side relay build: the entry
+  point there goes globally visible (signed-out screens included) and reports carry the
+  screen the reporter was on.
 
-Stories 13–17 built 2026-08-13 (tests green, verified live locally); Story 18's file work is
-done and the prod promotion is the remaining step. Status of record: [BUILD_STATUS](../../BUILD_STATUS.md).
+Stories 13–18 shipped 2026-08-14 (deployed to dev + prod). Status of record:
+[BUILD_STATUS](../../BUILD_STATUS.md).
 
 ## Backlog epics (placeholders — post-validation, signal-driven)
 

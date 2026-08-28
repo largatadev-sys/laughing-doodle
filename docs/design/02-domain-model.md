@@ -14,7 +14,7 @@ invariants — so they are written here, once, authoritatively.
 - **Entry date** — the day the work was *done* (distinct from when the row was written).
 - **Shared visibility** — every Member can read every TimeEntry; writes are author-only.
 
-### Incoming feedback (Reports) — `[SETTLED 2026-08-13]`
+### Incoming feedback (Reports) — `[SETTLED 2026-08-13 · AMENDED 2026-08-28]`
 
 _Design closed 2026-08-13 (grilling → spec: `docs/tickets/reports-inbox/spec.md`;
 architecture: ADR-010). A Report is **about the Largata trip-planning app** (the sibling
@@ -25,7 +25,13 @@ product), never about worklog itself._
   reporter's identity carried as **data**.
 - **Reporter** — the Largata user who filed a Report. **Foreign to worklog:** never a worklog
   User, never authenticates here — their name/UID travel as fields on the Report. Keeps the
-  two user bases fully separate.
+  two user bases fully separate. **May be absent** (2026-08-28, contract v1.1): a Report
+  filed from a signed-out Largata screen carries no identity at all, and the Inbox says so
+  ("Signed out") — never a synthesized stand-in identity, which would be indistinguishable
+  from a real Reporter in permanent data.
+- **Screen context** — where the Reporter was **when they opened the report flow** (not
+  where the bug happened — no client can know that), carried as an opaque Largata-minted
+  string (v1.1). Optional forever; worklog never validates it against Largata's screens.
 - **Inbox** — the worklog surface where Reports land and get worked: a fifth tab (bug icon)
   in the pill. Unlike TimeEntries, a Report has **no owner**: every Member reads and updates
   any Report equally.

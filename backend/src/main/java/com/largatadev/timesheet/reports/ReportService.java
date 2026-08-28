@@ -23,6 +23,10 @@ public class ReportService {
 
 	static final int DESCRIPTION_MAX_LENGTH = 2000;
 
+	/** Generous for a route pattern or a human label; the cap is the only validation the
+	 * field gets — its content is Largata's vocabulary, opaque here (contract v1.1). */
+	static final int SCREEN_MAX_LENGTH = 200;
+
 	/** Largata sends its sanitized, downsized display variant; anything larger is a mistake
 	 * or an attack, not a screenshot. */
 	static final int MAX_SCREENSHOTS = 3;
@@ -73,6 +77,7 @@ public class ReportService {
 				parsed.reporterUid(),
 				parsed.platform(),
 				parsed.appVersion(),
+				parsed.screen(),
 				parsed.submittedAt(),
 				OffsetDateTime.now());
 
@@ -210,24 +215,29 @@ public class ReportService {
 			details.put("description", "must be at most " + DESCRIPTION_MAX_LENGTH + " characters");
 		}
 
-		String reporterName = payload.reporter() == null ? null : payload.reporter().name();
-		String reporterUid = payload.reporter() == null ? null : payload.reporter().uid();
-		if (isBlank(reporterName)) {
-			details.put("reporter.name", "is required");
-		}
-		if (isBlank(reporterUid)) {
-			details.put("reporter.uid", "is required");
-		}
+		// Contract v1.1: reporter identity is optional — a report from a signed-out Largata
+		// screen has none to send. Name and uid are independently optional and stored as
+		// sent: under store-and-forward a 400 is a silently lost report, so a half-sent
+		// identity (a Largata bug, not the reporter's) must never cost the feedback.
+		String reporterName = trimToNull(payload.reporter() == null ? null : payload.reporter().name());
+		String reporterUid = trimToNull(payload.reporter() == null ? null : payload.reporter().uid());
 
 		String rawPlatform = payload.context() == null ? null : payload.context().platform();
 		Platform platform = parseEnum(Platform.class, rawPlatform).orElse(null);
 		if (platform == null) {
-			details.put("platform", "must be one of: android, ios, web");
+			details.put("context.platform", "must be one of: android, ios, web");
 		}
 
 		String appVersion = payload.context() == null ? null : payload.context().appVersion();
 		if (isBlank(appVersion)) {
-			details.put("appVersion", "is required");
+			details.put("context.appVersion", "is required");
+		}
+
+		// Optional; length-capped and nothing else — the value is Largata's vocabulary
+		// (route pattern or label, that repo's call), never validated against a route table.
+		String screen = trimToNull(payload.context() == null ? null : payload.context().screen());
+		if (screen != null && screen.length() > SCREEN_MAX_LENGTH) {
+			details.put("context.screen", "must be at most " + SCREEN_MAX_LENGTH + " characters");
 		}
 
 		OffsetDateTime submittedAt = null;
@@ -245,8 +255,8 @@ public class ReportService {
 			throw new ValidationException("Invalid report", details);
 		}
 
-		return new ParsedIntake(id, type, description, reporterName.trim(), reporterUid.trim(),
-				platform, appVersion.trim(), submittedAt, screenshots);
+		return new ParsedIntake(id, type, description, reporterName, reporterUid,
+				platform, appVersion.trim(), screen, submittedAt, screenshots);
 	}
 
 	/**
@@ -307,12 +317,16 @@ public class ReportService {
 		return value == null || value.isBlank();
 	}
 
+	private static String trimToNull(String value) {
+		return isBlank(value) ? null : value.trim();
+	}
+
 	/** An accepted Report plus whether this delivery is the one that created it (`201` vs `200`). */
 	public record Intake(ReportResponse report, boolean created) {
 	}
 
 	private record ParsedIntake(UUID id, ReportType type, String description, String reporterName,
-			String reporterUid, Platform platform, String appVersion, OffsetDateTime submittedAt,
-			List<IncomingScreenshot> screenshots) {
+			String reporterUid, Platform platform, String appVersion, String screen,
+			OffsetDateTime submittedAt, List<IncomingScreenshot> screenshots) {
 	}
 }
