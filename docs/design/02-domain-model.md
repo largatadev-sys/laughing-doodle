@@ -14,7 +14,7 @@ invariants — so they are written here, once, authoritatively.
 - **Entry date** — the day the work was *done* (distinct from when the row was written).
 - **Shared visibility** — every Member can read every TimeEntry; writes are author-only.
 
-### Incoming feedback (Reports) — `[SETTLED 2026-08-13 · AMENDED 2026-08-28]`
+### Incoming feedback (Reports) — `[SETTLED 2026-08-13 · AMENDED 2026-08-28 · 2026-08-29]`
 
 _Design closed 2026-08-13 (grilling → spec: `docs/tickets/reports-inbox/spec.md`;
 architecture: ADR-010). A Report is **about the Largata trip-planning app** (the sibling
@@ -38,7 +38,16 @@ product), never about worklog itself._
 - **Report status** — `new` (arrived, untouched) · `discuss` (UI "For discussion" — parked
   for a founders' decision) · `in progress` · `done` · `dismissed` (won't act). Free
   movement between statuses, any Member; who-last-changed + when is recorded. No
-  assignment, no comments, no deletion — Reports are kept forever.
+  assignment, no deletion — Reports are kept forever. (2026-08-29: the original
+  "no comments" rule is superseded by **Notes**, below; comments in the threaded,
+  reporter-visible sense stay excluded.)
+- **Note** — team-authored prose attached to a Report (2026-08-29, ADR-012): status says
+  *where* a Report stands, a Note says *why* — decisions, rationale, follow-ups. The log
+  is **append-only** (a Note is never deleted; Reports and their Notes are kept forever),
+  and a Note's text is **editable only by its author** (revised 2026-08-29 — a Note is
+  signed testimony, so the same ownership rule INV-2 gives a time entry applies), always
+  with a visible edited-at stamp. Never seen by the Reporter, never threaded — a Note is
+  the team talking to its future self, not a conversation.
 - **Screenshots** — optional, ≤3 per Report; the **bytes travel with the Report** through
   the relay (Largata's backend sanitizes/downsizes first) and **worklog owns its copy** —
   rendering the Inbox never depends on Largata being up.

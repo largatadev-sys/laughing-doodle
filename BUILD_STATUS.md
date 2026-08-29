@@ -123,6 +123,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 17  | Screenshots in the inbox UI                                  | ✅     | [05](docs/tickets/reports-inbox/issues/05-screenshots-inbox-ui.md) |
 | 18  | Ship: environments, smoke, deploy                            | ✅     | [06](docs/tickets/reports-inbox/issues/06-ship-and-bookkeeping.md) |
 | 19  | Intake contract v1.1: screen context + signed-out reporters  | ✅     | [07](docs/tickets/reports-inbox/issues/07-intake-contract-v1-1.md) |
+| 20  | Team notes + inbox clarity                                   | ✅     | [08](docs/tickets/reports-inbox/issues/08-report-notes-and-inbox-clarity.md) |
 
 **Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning` over 20 commits —
 the six tickets, then a second pass implementing the Claude Design package, then UI bug fixes —
@@ -211,6 +212,61 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
   pass; **the developer's live check (browser login → Reports tab) on prod is the
   remaining verification** per the standing deploy rule. Real v1.1 traffic starts when
   the Largata-side relay ships (starting input: the amended spec).
+- **Story 20 — built 2026-08-29 on `feature/story-20-report-notes-inbox-clarity`, not yet
+  squashed into `dev`.** Team **Notes** on Reports (ADR-012, reversing the spec's original
+  "no comments"): the log is append-only — no delete route exists anywhere, and a test
+  asserts that rather than assuming it — while each note's text is editable **by its
+  author**, stamped `Edited · when` from the JWT. Migration **V6** (`report_notes`,
+  editor columns included so the schema lands once); `POST`/`PUT /api/reports/{id}/notes`;
+  notes embedded oldest-first in `GET /api/reports` **and** in the status-change response
+  (the client swaps that response into its cache, so dropping them there would blank the log
+  on screen) — but **never** on the intake surface, replay included. Detail screen reworked
+  to the approved mockups: testimony-scale description leading the page, status pill in the
+  type row, Notes ledger + composer last; list rows gain a two-line snippet and a note count;
+  the inbox polls every ~60s while focused and foregrounded, silent-stale on failure.
+  Tickets [10](docs/tickets/reports-inbox/issues/10-notes-tracer-bullet.md)–[13](docs/tickets/reports-inbox/issues/13-inbox-focused-polling.md).
+  Wire contract stays **v1.1** — nothing here needs the Largata repo.
+  - **Full backend suite green** (159 tests, 31 of them new note tests; 76 in the reports
+    package); client typechecks and lints clean.
+  - **Verified live locally, not in prod:** `bootRun` against the compose Postgres applied
+    V6 (`Successfully applied 1 migration … now at version v6`) and `\d report_notes` matches
+    the ticket's column list; then a real round-trip against the running app — intake `201`,
+    note created with the author resolved from the token, a **second** member's edit stamping
+    *them* while authorship held, `DELETE` on the note path `404`, and an intake replay
+    returning `"notes":[]`. One live-check report + note is left sitting in the local dev
+    database (a "Live check: the map never loads." problem report); delete it whenever.
+  - **Editing was reversed to author-only the same day, before merge**, after the developer
+    saw the built screens on the LAN gate: they had pictured one shared notes field, and the
+    attributed per-person ledger made a Note read as signed testimony. A non-author's edit is
+    now `403` — the same ownership answer INV-2 gives on a time entry, so the app has one
+    ownership rule rather than two. ADR-012 carries the revision (its own *Invalidates it*
+    clause had named author-gating as the likely revisit); spec amendment, plan spec,
+    glossary, and tickets 08/11 all updated. `edited_by` stays in schema and wire though it
+    now always equals the author. **Lesson worth keeping: this decision survived a full
+    grilling round and an approved mockup, and still only became obvious once it was
+    rendered and clickable. Build the thin slice before trusting a settled decision.**
+  - **Three fixes came straight out of the developer's live check on the LAN gate**, which
+    is the standing deploy rule earning its keep: (1) long-pressing a row painted a browser
+    text selection that then ran into the status sheet as it mounted — `noTextSelect` now
+    sits beside `cursor: 'pointer'` on every Reports control, while prose stays selectable;
+    (2) the inbox landed on the full open list, which made the unselected chip row look like
+    nothing was filtering, so it now defaults to **New** (the chips keep toggling — clearing
+    one still shows everything open, but that view is chosen rather than landed on; a
+    dedicated "All open" chip was built first and removed at the developer's call);
+    (3) picking a status in the sheet showed only
+    a spinner, so the tap read as unregistered — the row now highlights, its dot springs and
+    a tick fades in on press. That third fix also uncovered a live bug: **a failed status
+    change was invisible**, because the screen's error line renders behind the modal that
+    stays open on failure. The sheet now shows it.
+  - **The developer's live check is done (2026-08-29) — locally, not in prod.** The branch was
+    served over LAN as the single-origin parity image (`docker compose --profile fullstack`;
+    `scripts/smoke.sh` 12/12 against the LAN address, CORS-behind-proxy check included) and
+    driven in a real browser, against an inbox seeded with the shapes the checklist needs: a
+    1479-char testimony, a signed-out report, reports with and without notes, and notes by
+    three authors including an edited one. Tickets 10–13 are marked done on that basis.
+    **Still to do: squash into `dev`, then deploy and re-check on dev + prod** — the standing
+    rule is about the deploy, and this branch has not been deployed anywhere.
+  - Off-epic side-effect, ledgered below: unmapped HTTP methods on `/api/**` used to 500.
 
 ## Off-epic ledger
 
@@ -228,3 +284,4 @@ _(Unplanned changes — a line each so small adjustments don't vanish. Starts em
 | 2026-07-14 | **Client navigation transitions.** Added screen-transition motion to fill the gap between the app's in-content motion (`FadeInView`) and its previously-default/hard-cut navigation. (1) Root auth stack: `fade` (260ms) — sign-in/out is a state change, not a spatial push. (2) `(app)` stack: `day/[date]` drill-in gets `ios_from_right`; modal forms get a consistent 300ms rise. (3) New `components/nav/TabTransition.tsx` wraps the headless `expo-router/ui` `<TabSlot />` (which swaps tabs with a hard cut) in a 220ms crossfade + 8px lateral drift keyed on `usePathname()`, direction following tab order — reuses `useReducedMotion` + `Animated` so it's the same motion language as `FadeInView`, and is skipped whole under reduced motion. All via `react-native-screens` (no Reanimated added). Web export compiles clean; typecheck + lint green. | Small UX polish, not a planned story; native-thread animation feel still needs the developer's live device check (web preview degrades the native `animation` options). |
 | 2026-07-14 | **Repo restructured: the Java/Gradle backend moved from the repo root into `backend/`, a peer to `client/`.** `src/`, `build.gradle`, `settings.gradle`, `gradlew*`, `gradle/` → `backend/` (57 `git mv` renames, R100 — no content change). Root now holds two app peers + an orchestration layer (`docker-compose.yml`, `Dockerfile`, `.env*`, `scripts/`, `docs/`). Dockerfile `COPY`s gained a `backend/` prefix (build context stays root); `.gitignore` split (new `backend/.gitignore`, root trimmed to cross-cutting); `.env`/compose stay at root and unchanged. Fulfils the deferred `docs/tickets/repo-restructure-backend-client` ticket. **As of this commit, path references in `docs/plans/` and `docs/tickets/` dated before it are relative to the old root and were intentionally left frozen** (immutable-record convention — updating live docs only: CLAUDE.md, this ledger, `docs/deploy/railway.md`). Rationale + rejected alternative (root Gradle multi-project) recorded as ADR-009. | Cosmetic discoverability/symmetry improvement, no behaviour change — never warranted its own story; deferred 2026-07-13, done now before the codebase grows.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | 2026-08-28 | **Skills package re-synced to upstream.** The installed `mattpocock/skills` set (`.agents/skills/` + `.claude/skills/`, mirrored 1:1 — verified identical diffs) refreshed to current upstream: a prose/wording revision pass across 77 files (em-dash → colon/comma style, small clarifications, e.g. `handoff`'s "suggested skills" now names the Skill tool), plus the matching `computedHash` bumps in `skills-lock.json`. No skill added or removed; no local skill content authored. | Tooling refresh, not scope. The local skill-sync rewrote the files on session start, so every fresh checkout showed 77 modified files until the synced state was committed; committing re-pins the lock hashes to the tracked content. |
+| 2026-08-29 | **`GlobalExceptionHandler` now maps `HttpRequestMethodNotSupportedException` to a clean `404` envelope.** Any unmapped HTTP method on an `/api/**` path previously fell to the catch-all handler: a `500` plus an `ERROR` log line, for what is really "there is no such route". Reported as `404 NOT_FOUND` rather than `405` deliberately — the error vocabulary stays the five codes 05-api-conventions documents, and for this API an unmapped method *is* an absent resource. | Surfaced by Story 20's "no DELETE route exists" test, which asserts the append-only guarantee at the routing table: `DELETE /api/reports/{id}/notes/{noteId}` returned `500`. One handler, no new error code, no conventions change — too small for a story, but it changes the response of every wrong-method call in the API, so it is recorded rather than folded silently into the story. |

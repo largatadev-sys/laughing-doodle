@@ -225,5 +225,50 @@ on-demand full-stack parity gate. The fast native daily loop this ADR protects i
 - *Invalidates it.* Anonymous-report abuse (no uid to correlate) → revisit toward
   requiring identity on signed-in screens plus rate limiting at the relay.
 
+**ADR-012 — Team notes on Reports: an append-only, editable log (reverses "no comments").**
+- *Context.* 2026-08-29. The Epic 3 spec deliberately excluded comments ("no assignment,
+  no comments, no deletion"), betting that the who-last-changed status stamp was enough
+  attribution. Real triage use disproved half the bet: `discuss` parks a question on a
+  visible agenda, but the *answer* — why a report was dismissed, what the founders
+  decided — evaporated into chat. Status records where a Report stands; nothing recorded
+  why. Spec: `docs/tickets/reports-inbox/spec.md`, "Amendments → Team notes".
+- *Decision.* A **Note** entity: team-authored prose on a Report, team-facing only — the
+  intake contract (ADR-010/011) is untouched. The **log is append-only** — no deletion,
+  ever, matching "Reports are kept forever" — while each Note's **text is editable by its
+  author** (see *Revised* below), always stamped with a visible edited-at (rewrites are
+  visible, never silent). Author/editor identity comes from the JWT, never the request
+  body. Notes float free of status changes.
+- *Revised 2026-08-29, same day, before merge: editing is **author-only**.* The decision
+  above originally read "editable by **any** Member", with the visible stamp as the
+  safeguard. The developer reversed it on first sight of the built screens: seeing the
+  ledger render as attributed, per-person entries — rather than the single shared notes
+  field they had pictured — made a Note read as **signed testimony**, and nobody should
+  put words under someone else's name. A non-author's edit is now `403`, the same
+  ownership answer INV-2 gives on a time entry, so the app has one ownership rule rather
+  than two. This is exactly the revisit the *Invalidates it* clause below anticipated —
+  though the trigger was the design becoming legible, not the team outgrowing trust.
+  Costs: a typo in a teammate's note now needs them to fix it, or a follow-up Note.
+  `edited_by` is kept in the schema and the wire response even though it now always equals
+  the author — a stamp is worth more when it records who actually acted than when it
+  assumes; the UI simply renders "Edited · when" rather than repeating the name.
+- *Alternatives rejected.* (1) A single mutable notes field per report — last-writer-wins
+  silently destroys the previous decision and its attribution, defeating the feature's
+  entire point. (2) Full comments — threads, replies, reporter visibility — recreate an
+  issue tracker inside a 4-person inbox and reopen the reporter-feedback loop rejected in
+  ADR-010. (3) Strict immutability (the session's recommended default) — developer call
+  against: typo friction outweighs tamper-evidence among four trusted founders.
+  (4) A unified status+notes activity log — needs status *history* the schema doesn't
+  keep; recorded as a visible non-decision rather than scope creep. (5) Any-Member edit
+  with a visible edited-by stamp — the original decision, reversed the same day; see
+  *Revised* above.
+- *Assumption.* The convention "a changed decision is a new Note; edits are for typos"
+  holds socially without enforcement. Author-gating no longer relies on trust for
+  *tamper*-resistance, but it does assume a teammate's typo is worth less than the
+  integrity of an attributed record — true at four founders, and more true as the team grows.
+- *Invalidates it.* A need for a real audit trail or status history; reporter-visible
+  responses; or notes becoming long-lived enough that a wrong one must be retracted rather
+  than superseded → revisit toward note versioning, a proper activity log, or a
+  soft-delete that keeps the row.
+
 **Deferred (until validated).** Caching, read replicas, async/queues, rate limiting,
 real observability — explicitly **not** decided now; revisit signal-driven post-validation.

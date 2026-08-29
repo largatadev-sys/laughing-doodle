@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppHeader } from '@/components/AppHeader';
 import {
@@ -11,7 +11,7 @@ import {
 import { ReportRow } from '@/components/ReportRow';
 import { StatusSheet } from '@/components/StatusSheet';
 import { Card, Eyebrow, FadeInView, Scroll } from '@/components/ui';
-import type { PressState } from '@/components/ui/press';
+import { noTextSelect, type PressState } from '@/components/ui/press';
 import { useReports } from '@/lib/reports';
 import { OPEN_STATUSES, STATUS_LABELS } from '@/lib/reportStatus';
 import type { ReportResponse, ReportStatus } from '@/lib/types';
@@ -27,21 +27,63 @@ const SEGMENTS: { key: Segment; label: string }[] = [
   { key: 'dismissed', label: 'Dismissed' },
 ];
 
+// Slow enough to be invisible on a 4-person team's volume, quick enough that a report filed
+// mid-conversation shows up before anyone asks "did it come through?".
+const POLL_INTERVAL_MS = 60_000;
+
+// The inbox opens on New: untriaged feedback is the thing that actually needs someone, and
+// landing on the full open list made "nothing is selected" look like "something is broken".
+// Clearing the chip still gets you every open report — that view is now something you choose,
+// not where you land.
+const DEFAULT_OPEN_FILTER: ReportStatus = 'new';
+
 export default function ReportsInbox() {
-  const { reports, error, refresh, changeStatus } = useReports();
+  const { reports, error, refresh, refreshQuietly, changeStatus } = useReports();
   const [segment, setSegment] = useState<Segment>('open');
-  // Within Open, an optional narrowing to one status. Cleared whenever the segment changes.
-  const [narrow, setNarrow] = useState<ReportStatus | null>(null);
+  // Which slice of Open is showing; null means every open report. Starts on New, and resets
+  // to New whenever you come back to the Open segment.
+  const [narrow, setNarrow] = useState<ReportStatus | null>(DEFAULT_OPEN_FILTER);
   const [sheetFor, setSheetFor] = useState<ReportResponse | null>(null);
   const [saving, setSaving] = useState<ReportStatus | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
 
-  // Feedback lands while you are elsewhere in the app, so the inbox refetches on focus.
-  // This does NOT clear the badge: the count follows the data, not the visit.
+  // Feedback lands while you are elsewhere in the app, so the inbox refetches on focus — and
+  // then keeps itself current while you sit here, because a triage session can outlast the
+  // reports it started with. Neither refetch clears the badge: the count follows the data,
+  // not the visit.
+  //
+  // The timer exists only while this tab is focused AND the app is in the foreground: no
+  // polling from a backgrounded app, and none at all from any other screen. Ticks are quiet —
+  // a failed poll leaves the list exactly as it was, with no banner, because a network blip
+  // must not interrupt someone mid-triage. (This only shortens the *display* wait; the
+  // upstream delivery lag is a separate problem, tracked on its own.)
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh]),
+
+      let timer: ReturnType<typeof setInterval> | null = null;
+      const start = () => {
+        if (timer === null) timer = setInterval(refreshQuietly, POLL_INTERVAL_MS);
+      };
+      const stop = () => {
+        if (timer !== null) {
+          clearInterval(timer);
+          timer = null;
+        }
+      };
+
+      if (AppState.currentState === 'active') start();
+      // Coming back to the foreground refetches through the provider already; this only
+      // restarts the clock.
+      const sub = AppState.addEventListener('change', (state) =>
+        state === 'active' ? start() : stop(),
+      );
+
+      return () => {
+        stop();
+        sub.remove();
+      };
+    }, [refresh, refreshQuietly]),
   );
 
   const openReports = useMemo(
@@ -59,7 +101,7 @@ export default function ReportsInbox() {
 
   function selectSegment(next: Segment) {
     setSegment(next);
-    setNarrow(null);
+    setNarrow(DEFAULT_OPEN_FILTER);
   }
 
   async function move(report: ReportResponse, status: ReportStatus) {
@@ -121,7 +163,8 @@ export default function ReportsInbox() {
           </View>
         </FadeInView>
 
-        {/* Sub-chips narrow *within* Open — the three archives need no further slicing. */}
+        {/* Sub-chips narrow *within* Open — the three archives need no further slicing.
+            The screen lands on New; clearing the active chip widens to every open report. */}
         {segment === 'open' && (
           <FadeInView delay={90}>
             <View style={styles.subChips}>
@@ -182,7 +225,11 @@ export default function ReportsInbox() {
                   <ReportRow
                     report={report}
                     onPress={(r) => router.push({ pathname: '/report/[id]', params: { id: r.id } })}
-                    onTriage={setSheetFor}
+                    // A fresh sheet, not one still showing last attempt's failure.
+                    onTriage={(r) => {
+                      setWriteError(null);
+                      setSheetFor(r);
+                    }}
                   />
                 </View>
               </FadeInView>
@@ -200,8 +247,12 @@ export default function ReportsInbox() {
       <StatusSheet
         report={sheetFor}
         saving={saving}
+        error={writeError}
         onSelect={(status) => sheetFor && move(sheetFor, status)}
-        onClose={() => setSheetFor(null)}
+        onClose={() => {
+          setSheetFor(null);
+          setWriteError(null);
+        }}
       />
     </View>
   );
@@ -235,6 +286,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.pill,
     cursor: 'pointer',
+    ...noTextSelect,
   },
   segmentActive: { backgroundColor: colors.surface },
   segmentPressed: { opacity: 0.85 },
@@ -253,6 +305,7 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
     backgroundColor: colors.surface,
     cursor: 'pointer',
+    ...noTextSelect,
   },
   subChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   subChipHover: { backgroundColor: colors.brandSoft },

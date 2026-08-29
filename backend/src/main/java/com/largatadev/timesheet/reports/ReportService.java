@@ -1,5 +1,6 @@
 package com.largatadev.timesheet.reports;
 
+import com.largatadev.timesheet.error.ForbiddenException;
 import com.largatadev.timesheet.error.NotFoundException;
 import com.largatadev.timesheet.error.ValidationException;
 import com.largatadev.timesheet.users.User;
@@ -12,9 +13,11 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,6 +25,10 @@ import java.util.stream.Collectors;
 public class ReportService {
 
 	static final int DESCRIPTION_MAX_LENGTH = 2000;
+
+	/** A Note is a decision record, not a document — the same ceiling the reporter's own words
+	 * get, so neither side of the screen can bury the other. */
+	static final int NOTE_MAX_LENGTH = 2000;
 
 	/** Generous for a route pattern or a human label; the cap is the only validation the
 	 * field gets — its content is Largata's vocabulary, opaque here (contract v1.1). */
@@ -34,16 +41,19 @@ public class ReportService {
 
 	private final ReportRepository reportRepository;
 	private final ReportScreenshotRepository screenshotRepository;
+	private final ReportNoteRepository noteRepository;
 	private final ReportWriter reportWriter;
 	private final UserRepository userRepository;
 
 	public ReportService(
 			ReportRepository reportRepository,
 			ReportScreenshotRepository screenshotRepository,
+			ReportNoteRepository noteRepository,
 			ReportWriter reportWriter,
 			UserRepository userRepository) {
 		this.reportRepository = reportRepository;
 		this.screenshotRepository = screenshotRepository;
+		this.noteRepository = noteRepository;
 		this.reportWriter = reportWriter;
 		this.userRepository = userRepository;
 	}
@@ -66,7 +76,7 @@ public class ReportService {
 		Optional<Report> existing = reportRepository.findById(parsed.id());
 		if (existing.isPresent()) {
 			// A replay never rewrites bytes — the stored screenshots are the ones that count.
-			return new Intake(toResponse(existing.get()), false);
+			return new Intake(intakeResponse(existing.get()), false);
 		}
 
 		Report report = new Report(
@@ -82,12 +92,12 @@ public class ReportService {
 				OffsetDateTime.now());
 
 		try {
-			return new Intake(toResponse(reportWriter.insert(report, parsed.screenshots())), true);
+			return new Intake(intakeResponse(reportWriter.insert(report, parsed.screenshots())), true);
 		} catch (DataIntegrityViolationException raced) {
 			// Two concurrent deliveries of the same id: this one lost the primary-key race,
 			// which is exactly the idempotent outcome — return what the winner stored.
 			// (The pre-check above is only an optimisation; the key is the real guarantee.)
-			return new Intake(toResponse(reportRepository.findById(parsed.id())
+			return new Intake(intakeResponse(reportRepository.findById(parsed.id())
 					.orElseThrow(() -> raced)), false);
 		}
 	}
@@ -96,17 +106,61 @@ public class ReportService {
 	public List<ReportResponse> list(String statusFilter) {
 		ReportStatus status = parseStatusFilter(statusFilter);
 		List<Report> reports = reportRepository.findFiltered(status);
-		Map<Long, String> namesById = triagerNames(reports);
+		List<UUID> reportIds = reports.stream().map(Report::getId).toList();
 
-		Map<UUID, List<Integer>> ordinalsByReport = screenshotOrdinals(
-				reports.stream().map(Report::getId).toList());
+		Map<UUID, List<Integer>> ordinalsByReport = screenshotOrdinals(reportIds);
+		// Every note for the whole page in one query, rather than one query per report.
+		Map<UUID, List<ReportNote>> notesByReport = notesByReport(reportIds);
+		Map<Long, String> namesById = resolveNames(reports, flatten(notesByReport));
 
 		return reports.stream()
 				.map(report -> ReportResponse.of(
 						report,
 						triagerName(report, namesById),
-						ordinalsByReport.getOrDefault(report.getId(), List.of())))
+						ordinalsByReport.getOrDefault(report.getId(), List.of()),
+						noteResponses(notesByReport.getOrDefault(report.getId(), List.of()), namesById)))
 				.toList();
+	}
+
+	/**
+	 * Append a Note. The author is the caller's JWT identity, passed in by the controller — the
+	 * request body carries only text, so there is nothing here to spoof.
+	 */
+	@Transactional
+	public ReportNoteResponse addNote(UUID reportId, String rawBody, Long authorId) {
+		requireReport(reportId);
+		String body = validateNoteBody(rawBody);
+
+		ReportNote note = noteRepository.save(
+				new ReportNote(reportId, authorId, body, OffsetDateTime.now()));
+		return noteResponse(note);
+	}
+
+	/**
+	 * Rewrite your own Note's text. <strong>Author-only</strong> (ADR-012, revised 2026-08-29
+	 * after the developer saw the attributed ledger live): a Note is signed testimony from one
+	 * Member, so nobody else may put words under their name. This is the same ownership shape
+	 * as INV-2 on time entries — one rule across the app, not two.
+	 *
+	 * <p>Nothing removes the note, and its author and createdAt never move — the log itself
+	 * stays append-only.
+	 */
+	@Transactional
+	public ReportNoteResponse editNote(UUID reportId, UUID noteId, String rawBody, Long editorId) {
+		requireReport(reportId);
+		ReportNote note = noteRepository.findByIdAndReportId(noteId, reportId)
+				.orElseThrow(() -> new NotFoundException("Note not found"));
+
+		// 403, not 404: the note is real and readable — the caller simply doesn't own it. Same
+		// status and wording shape as the entries service, so the API has one ownership answer.
+		if (!note.getAuthorId().equals(editorId)) {
+			throw new ForbiddenException("Only the author may edit this note");
+		}
+
+		String body = validateNoteBody(rawBody);
+
+		note.edit(body, editorId, OffsetDateTime.now());
+		return noteResponse(noteRepository.save(note));
 	}
 
 	/** Stream one screenshot's bytes to an authenticated Member. */
@@ -127,16 +181,98 @@ public class ReportService {
 
 		// Attribution comes from the JWT identity the controller passed in — never the body.
 		report.changeStatus(status, callerId, OffsetDateTime.now());
-		return toResponse(reportRepository.save(report));
+		return teamResponse(reportRepository.save(report));
 	}
 
-	private ReportResponse toResponse(Report report) {
-		String triagerName = report.getStatusChangedBy() == null
-				? null
-				: userRepository.findById(report.getStatusChangedBy()).map(User::getName).orElse(null);
+	/**
+	 * The relay's view of a Report: no notes, ever, replay included. Largata relays feedback in;
+	 * what the team wrote about it afterwards is not its business, and a triaged report's replay
+	 * must not become a back-channel out.
+	 */
+	private ReportResponse intakeResponse(Report report) {
+		return response(report, List.of());
+	}
+
+	/** A Member's view: the same Report with its notes attached. */
+	private ReportResponse teamResponse(Report report) {
+		return response(report, noteRepository.findByReportIdOrderByCreatedAtAscIdAsc(report.getId()));
+	}
+
+	private ReportResponse response(Report report, List<ReportNote> notes) {
+		Map<Long, String> namesById = resolveNames(List.of(report), notes);
 		List<Integer> ordinals = screenshotOrdinals(List.of(report.getId()))
 				.getOrDefault(report.getId(), List.of());
-		return ReportResponse.of(report, triagerName, ordinals);
+		return ReportResponse.of(report, triagerName(report, namesById), ordinals,
+				noteResponses(notes, namesById));
+	}
+
+	private ReportNoteResponse noteResponse(ReportNote note) {
+		return noteResponses(List.of(note), resolveNames(List.of(), List.of(note))).getFirst();
+	}
+
+	private static List<ReportNoteResponse> noteResponses(List<ReportNote> notes, Map<Long, String> namesById) {
+		return notes.stream()
+				.map(note -> ReportNoteResponse.of(note,
+						nameOf(namesById, note.getAuthorId()),
+						nameOf(namesById, note.getEditedBy())))
+				.toList();
+	}
+
+	/** Null-safe lookup: an unedited note has no editor id, and Map.of() throws on a null key. */
+	private static String nameOf(Map<Long, String> namesById, Long userId) {
+		return userId == null ? null : namesById.get(userId);
+	}
+
+	private Map<UUID, List<ReportNote>> notesByReport(List<UUID> reportIds) {
+		if (reportIds.isEmpty()) {
+			return Map.of();
+		}
+		Map<UUID, List<ReportNote>> byReport = new HashMap<>();
+		for (ReportNote note : noteRepository.findByReportIdInOrderByCreatedAtAscIdAsc(reportIds)) {
+			byReport.computeIfAbsent(note.getReportId(), key -> new ArrayList<>()).add(note);
+		}
+		return byReport;
+	}
+
+	private static List<ReportNote> flatten(Map<UUID, List<ReportNote>> notesByReport) {
+		return notesByReport.values().stream().flatMap(List::stream).toList();
+	}
+
+	/** Every worklog User named anywhere on this page — triagers, note authors, note editors —
+	 *  looked up once. The client holds no user directory, so names are resolved here. */
+	private Map<Long, String> resolveNames(List<Report> reports, List<ReportNote> notes) {
+		Set<Long> ids = new HashSet<>();
+		reports.forEach(report -> ids.add(report.getStatusChangedBy()));
+		notes.forEach(note -> {
+			ids.add(note.getAuthorId());
+			ids.add(note.getEditedBy());
+		});
+		// A never-triaged report and an unedited note both contribute a null here.
+		ids.remove(null);
+
+		if (ids.isEmpty()) {
+			return Map.of();
+		}
+		return userRepository.findAllById(ids).stream()
+				.collect(Collectors.toMap(User::getId, User::getName));
+	}
+
+	private void requireReport(UUID reportId) {
+		if (!reportRepository.existsById(reportId)) {
+			throw new NotFoundException("Report not found");
+		}
+	}
+
+	private static String validateNoteBody(String rawBody) {
+		String body = rawBody == null ? null : rawBody.trim();
+		if (isBlank(body)) {
+			throw new ValidationException("Invalid note", Map.of("body", "is required"));
+		}
+		if (body.length() > NOTE_MAX_LENGTH) {
+			throw new ValidationException("Invalid note",
+					Map.of("body", "must be at most " + NOTE_MAX_LENGTH + " characters"));
+		}
+		return body;
 	}
 
 	/** Which screenshot slots each report has — ordinals only, never the bytes. */
@@ -156,19 +292,6 @@ public class ReportService {
 	private static String triagerName(Report report, Map<Long, String> namesById) {
 		Long triagerId = report.getStatusChangedBy();
 		return triagerId == null ? null : namesById.get(triagerId);
-	}
-
-	private Map<Long, String> triagerNames(List<Report> reports) {
-		List<Long> ids = reports.stream()
-				.map(Report::getStatusChangedBy)
-				.filter(java.util.Objects::nonNull)
-				.distinct()
-				.toList();
-		if (ids.isEmpty()) {
-			return Map.of();
-		}
-		return userRepository.findAllById(ids).stream()
-				.collect(Collectors.toMap(User::getId, User::getName));
 	}
 
 	private ReportStatus parseStatusFilter(String statusFilter) {

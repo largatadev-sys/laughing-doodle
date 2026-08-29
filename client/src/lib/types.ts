@@ -44,6 +44,24 @@ export type ReportType = 'problem' | 'idea';
 export type ReportPlatform = 'android' | 'ios' | 'web';
 export type ReportStatus = 'new' | 'discuss' | 'in_progress' | 'done' | 'dismissed';
 
+/**
+ * A team-authored note on a report (Story 20, ADR-012 as revised). The log is append-only —
+ * there is no delete anywhere — and a note's text can be rewritten only by its author, which
+ * is why `editedBy` always equals `authorId` in practice. The `editedAt` null-ness is what the
+ * UI reads to decide whether to show the "Edited" stamp; the editor's *name* is carried but
+ * not rendered, since it would only repeat the author line above it.
+ */
+export interface ReportNote {
+  id: string;
+  body: string;
+  authorId: number;
+  authorName: string;
+  createdAt: string;
+  editedBy: number | null;
+  editedByName: string | null;
+  editedAt: string | null;
+}
+
 export interface ReportResponse {
   id: string;
   type: ReportType;
@@ -65,6 +83,8 @@ export interface ReportResponse {
   statusChangedByName: string | null;
   statusChangedAt: string | null;
   screenshotOrdinals: number[];
+  /** The team's own writing, oldest-first. Never sent to the relay, never seen by a reporter. */
+  notes: ReportNote[];
 }
 
 export interface ErrorEnvelope {

@@ -3,6 +3,7 @@ package com.largatadev.timesheet.error;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -48,6 +49,17 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorEnvelope> handleNoResource(NoResourceFoundException ex) {
 		// A missing static file (e.g. an unknown asset under the SPA's static/ root). Routine —
 		// don't log as an error; return a clean 404 instead of the catch-all's 500. See ADR-008.
+		return ResponseEntity.status(ErrorCode.NOT_FOUND.status())
+				.body(ErrorEnvelope.of(ErrorCode.NOT_FOUND, "Resource not found."));
+	}
+
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity<ErrorEnvelope> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+		// A method nobody mapped — e.g. DELETE on a report note, which deliberately has no route
+		// (ADR-012). Without this it fell to the catch-all: a 500 and an ERROR log line for what
+		// is really "there is no such thing here". Reported as 404 rather than 405 so the error
+		// vocabulary stays the five documented codes (05-api-conventions); for this API an
+		// unmapped method IS an absent resource.
 		return ResponseEntity.status(ErrorCode.NOT_FOUND.status())
 				.body(ErrorEnvelope.of(ErrorCode.NOT_FOUND, "Resource not found."));
 	}

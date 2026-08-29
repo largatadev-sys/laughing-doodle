@@ -1,6 +1,16 @@
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
-import type { PressState } from '@/components/ui/press';
+import { noTextSelect, type PressState } from '@/components/ui/press';
 import { STATUS_EDGE, STATUS_LABELS, STATUS_ORDER } from '@/lib/reportStatus';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import type { ReportResponse, ReportStatus } from '@/lib/types';
@@ -9,6 +19,9 @@ import { colors, fonts, radius, space, type } from '@/theme';
 interface StatusSheetProps {
   report: ReportResponse | null;
   saving: ReportStatus | null;
+  /** A failed move. The sheet stays open on failure, so this has to be shown *here* — the
+   *  screen's own error line is behind the modal and nobody would ever see it. */
+  error: string | null;
   onSelect: (status: ReportStatus) => void;
   onClose: () => void;
 }
@@ -18,9 +31,24 @@ interface StatusSheetProps {
  * move you want. Dismissed is separated from the forward path and labelled with its consequence
  * — "won't act" should never read as the next step after Done.
  */
-export function StatusSheet({ report, saving, onSelect, onClose }: StatusSheetProps) {
+export function StatusSheet({ report, saving, error, onSelect, onClose }: StatusSheetProps) {
   const reduced = useReducedMotion();
   const forward = STATUS_ORDER.filter((s) => s !== 'dismissed');
+
+  // The pick is acknowledged locally, the instant it happens — the write still has to reach
+  // the server, and a tap that shows nothing until it does feels broken. This never decides
+  // what the report's status *is*; it only says "you chose this just now".
+  //
+  // Stamped with the report it belongs to and derived rather than reset in an effect, so a
+  // pick simply stops applying the moment the sheet is showing a different report — or the
+  // moment the move fails, since a tick left over a failed write would be a lie.
+  const [pickedOn, setPicked] = useState<{ reportId: string; status: ReportStatus } | null>(null);
+  const picked = pickedOn && pickedOn.reportId === report?.id && !error ? pickedOn.status : null;
+
+  function pick(status: ReportStatus) {
+    if (report) setPicked({ reportId: report.id, status });
+    onSelect(status);
+  }
 
   return (
     <Modal
@@ -43,9 +71,11 @@ export function StatusSheet({ report, saving, onSelect, onClose }: StatusSheetPr
                 key={status}
                 status={status}
                 current={report?.status === status}
+                picked={picked === status}
                 saving={saving === status}
                 disabled={saving !== null}
-                onPress={() => onSelect(status)}
+                reduced={reduced}
+                onPress={() => pick(status)}
               />
             ))}
           </View>
@@ -55,11 +85,15 @@ export function StatusSheet({ report, saving, onSelect, onClose }: StatusSheetPr
           <Option
             status="dismissed"
             current={report?.status === 'dismissed'}
+            picked={picked === 'dismissed'}
             saving={saving === 'dismissed'}
             disabled={saving !== null}
-            onPress={() => onSelect('dismissed')}
+            reduced={reduced}
+            onPress={() => pick('dismissed')}
             consequence="we won't act on this"
           />
+
+          {error && <Text style={styles.error}>{error}</Text>}
         </Pressable>
       </Pressable>
     </Modal>
@@ -69,39 +103,83 @@ export function StatusSheet({ report, saving, onSelect, onClose }: StatusSheetPr
 function Option({
   status,
   current,
+  picked,
   saving,
   disabled,
+  reduced,
   onPress,
   consequence,
 }: {
   status: ReportStatus;
   current: boolean;
+  /** Chosen just now, whether or not the write has landed — this is what animates. */
+  picked: boolean;
   saving: boolean;
   disabled: boolean;
+  reduced: boolean;
   onPress: () => void;
   consequence?: string;
 }) {
+  // Named for the animation, not the action — the sheet above has a `pick()` function.
+  const [pickAnim] = useState(() => new Animated.Value(0));
+
+  // The dot swells and settles, and a tick fades in beside it. Everything about the pick is
+  // immediate; the spinner that follows means "still saving", not "did that register?".
+  useEffect(() => {
+    if (!picked) {
+      pickAnim.setValue(0);
+      return;
+    }
+    if (reduced) {
+      pickAnim.setValue(1);
+      return;
+    }
+    const anim = Animated.spring(pickAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 14,
+    });
+    anim.start();
+    return () => anim.stop();
+  }, [picked, reduced, pickAnim]);
+
+  // Overshoot on the way, settling a touch larger than it started — the dot reads as "taken".
+  const dotScale = pickAnim.interpolate({ inputRange: [0, 0.6, 1], outputRange: [1, 1.5, 1.2] });
+  const chosen = current || picked;
+
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityState={{ selected: current, disabled }}
+      accessibilityState={{ selected: chosen, disabled, busy: saving }}
       accessibilityLabel={`Move to ${STATUS_LABELS[status]}${consequence ? `, ${consequence}` : ''}`}
       style={({ pressed, hovered }: PressState) => [
         styles.option,
-        current && styles.optionCurrent,
-        hovered && !current && styles.optionHover,
+        // Highlights the moment you tap, not when the server agrees.
+        chosen && styles.optionCurrent,
+        hovered && !chosen && styles.optionHover,
         pressed && styles.optionPressed,
       ]}>
-      <View style={[styles.dot, { backgroundColor: STATUS_EDGE[status] }]} />
-      <Text style={[styles.optionText, current && styles.optionTextCurrent]}>
+      <Animated.View
+        style={[
+          styles.dot,
+          { backgroundColor: STATUS_EDGE[status], transform: [{ scale: dotScale }] },
+        ]}
+      />
+      <Text style={[styles.optionText, chosen && styles.optionTextCurrent]}>
         {STATUS_LABELS[status]}
         {consequence ? <Text style={styles.consequence}> — {consequence}</Text> : null}
       </Text>
+      {picked ? (
+        <Animated.View style={{ opacity: pickAnim, transform: [{ scale: pickAnim }] }}>
+          <Feather name="check" size={17} color={colors.brand} />
+        </Animated.View>
+      ) : null}
       {saving ? (
         <ActivityIndicator size="small" color={colors.brand} />
-      ) : current ? (
+      ) : current && !picked ? (
         <Text style={styles.currentMark}>current</Text>
       ) : null}
     </Pressable>
@@ -118,6 +196,10 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
     paddingBottom: space.xxl,
     gap: 2,
+    // The sheet mounts under a pointer that is still held down from the long-press, so a
+    // selection started on the row would run straight into this text. It is all control
+    // labels anyway — nothing here is meant to be copied.
+    ...noTextSelect,
   },
   grabber: {
     alignSelf: 'center',
@@ -154,4 +236,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.hairline,
     marginVertical: space.sm,
   },
+  error: { ...type.caption, color: colors.brand, fontFamily: fonts.semibold, marginTop: space.sm },
 });

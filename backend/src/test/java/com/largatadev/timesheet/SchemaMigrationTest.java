@@ -48,6 +48,15 @@ class SchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void migrationCreatesReportNotesTable() throws SQLException {
+		try (Connection conn = connect()) {
+			try (var rs = conn.getMetaData().getTables(null, null, "report_notes", null)) {
+				assertThat(rs.next()).as("report_notes table exists").isTrue();
+			}
+		}
+	}
+
 	@ParameterizedTest
 	@ValueSource(ints = {0, -1})
 	void rejectsNonPositiveDurationMin(int durationMin) throws SQLException {

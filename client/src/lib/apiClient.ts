@@ -2,6 +2,7 @@ import type {
   CreateEntryRequest,
   EntryResponse,
   LoginResponse,
+  ReportNote,
   ReportResponse,
   ReportStatus,
   UpdateEntryRequest,
@@ -30,6 +31,22 @@ export class ApiError extends Error {
 
 export class UnauthorizedError extends ApiError {}
 
+/**
+ * The request never reached a server: offline, DNS, TLS, or a host that didn't answer —
+ * on this stack most often Railway cold-starting after a sleep.
+ *
+ * It exists so that failure doesn't surface as `fetch`'s own message. A rejected fetch is a
+ * `TypeError` whose message is "Failed to fetch" (Chrome) or "Network request failed"
+ * (React Native), and every caller here shows `e.message` — so a teammate whose triage tap
+ * hit a sleeping server was told "Failed to fetch", which reads as a crash rather than as
+ * something they can retry. Status `0` because there is no HTTP response to report.
+ */
+export class NetworkError extends ApiError {
+  constructor() {
+    super(0, 'NETWORK', "Couldn't reach the server. Check your connection and try again.");
+  }
+}
+
 interface RequestOptions {
   method?: string;
   body?: unknown;
@@ -42,11 +59,18 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.Authorization = `Bearer ${options.token}`;
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
-    method: options.method ?? 'GET',
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
+  // `fetch` rejects only when the request never got a response at all; any HTTP status,
+  // including 500, resolves normally and is handled below.
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${path}`, {
+      method: options.method ?? 'GET',
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    throw new NetworkError();
+  }
 
   if (response.status === 204) {
     return undefined as T;
@@ -122,12 +146,35 @@ export const apiClient = {
     return request<ReportResponse[]>(`/api/reports${qs}`, { token });
   },
 
-  // The inbox's only write. Who made the change is taken from the token server-side, so it
-  // is deliberately absent from the body.
+  // Who made the change is taken from the token server-side, so it is deliberately absent
+  // from the body.
   updateReportStatus(id: string, status: ReportStatus, token: string): Promise<ReportResponse> {
     return request<ReportResponse>(`/api/reports/${id}/status`, {
       method: 'PUT',
       body: { status },
+      token,
+    });
+  },
+
+  // Notes. Author and editor are stamped from the token, so the body is only ever the text —
+  // and there is no delete call here because the API has no route for one (ADR-012).
+  addReportNote(reportId: string, body: string, token: string): Promise<ReportNote> {
+    return request<ReportNote>(`/api/reports/${reportId}/notes`, {
+      method: 'POST',
+      body: { body },
+      token,
+    });
+  },
+
+  editReportNote(
+    reportId: string,
+    noteId: string,
+    body: string,
+    token: string,
+  ): Promise<ReportNote> {
+    return request<ReportNote>(`/api/reports/${reportId}/notes/${noteId}`, {
+      method: 'PUT',
+      body: { body },
       token,
     });
   },

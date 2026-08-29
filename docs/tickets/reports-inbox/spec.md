@@ -75,7 +75,9 @@ instant thank-you in Largata and never see worklog.
 - **Statuses:** `new` (arrived, untouched) · `discuss` (UI label "For discussion" —
   parked for a founders' decision) · `in_progress` · `done` · `dismissed` (won't act).
   Free movement between any statuses by any Member; no enforced transitions. No
-  assignment, no comments, no deletion — Reports are permanent.
+  assignment, no deletion — Reports are permanent. ~~No comments~~ (**superseded
+  2026-08-29:** team **Notes** — append-only log, author-editable with a visible
+  stamp — see Amendments; threaded/reporter-visible comments stay excluded).
 - Reports have **no owner**; every Member reads and updates equally. INV-1–INV-5 untouched.
 - Display and sort use `submittedAt` (honest to the user's action; retry delivery must not
   reorder), newest first.
@@ -154,9 +156,12 @@ instant thank-you in Largata and never see worklog.
   Profile — with the `new`-count badge, wired through the existing headless tab bar and
   its crossfade transition; badge rendering respects the existing motion/reduced-motion
   language.
-- Inbox screen: status filter chips (default: everything open — `new` + `discuss` +
-  `in_progress`), report cards (type glyph, snippet, reporter, platform + version,
-  submitted time, status pill), Largata-brand styling.
+- Inbox screen: status filter chips (~~default: everything open — `new` + `discuss` +
+  `in_progress`~~ — **superseded 2026-08-29:** the screen lands on **New**, though
+  clearing the chip still shows everything open; see Amendments → "Team notes + inbox
+  clarity"), report cards (type
+  glyph, snippet, reporter, platform + version, submitted time, status pill),
+  Largata-brand styling.
 - Drill-in report detail (same slide pattern as the day drill-in): full description,
   screenshot viewer, metadata block, and the status control. Status changes are the only
   write this surface has.
@@ -193,7 +198,9 @@ instant thank-you in Largata and never see worklog.
   sanitization, the store-and-forward outbox and retry loop. Separate repo, separate
   session, built to the wire contract above.
 - Reporter feedback loop (no status back to the reporter, no "my reports" screen),
-  comments, assignment, priorities, labels beyond status, report deletion or editing,
+  ~~comments~~ (**team Notes in scope since the 2026-08-29 amendment** — threaded /
+reporter-visible comments stay out), assignment, priorities, labels beyond status,
+report deletion or editing,
   push/email notifications, ~~capture of which screen the reporter was on~~ (**in scope
   since v1.1**, 2026-08-28 — see Amendments), worklog-side
   Firebase anything, a public/unauthenticated worklog endpoint of any kind, object
@@ -250,3 +257,82 @@ Story 19 / [ticket 07](issues/07-intake-contract-v1-1.md).
 Schema: migration `V5` — `reports.screen VARCHAR(200) NULL`; `reporter_name` /
 `reporter_uid` drop `NOT NULL`. Statuses, idempotency, screenshots, both auth schemes:
 untouched. The intake tests remain the contract tests and pin all of the above.
+
+### Team notes + inbox clarity (2026-08-29)
+
+Grilled 2026-08-29; the schema change (new `report_notes` table) was signed off by the
+developer in-session (the stop-rule ask). Trigger: real triage usage — statuses record
+*where* a report stands, but the decisions behind the moves (`discuss` outcomes,
+`dismissed` rationale) were evaporating into chat; and on the detail screen the reporter's
+words sat visually subordinate to the metadata around them. **The wire contract is
+untouched and stays v1.1** — everything here is worklog-team-facing; no Largata
+coordination. (This amendment is deliberately *not* numbered v1.2: amendment numbers here
+have tracked the intake contract, and the next contract bump — device context, below — is
+the real v1.2.) Recorded as **ADR-012**; story/ticket: Story 20 /
+[ticket 08](issues/08-report-notes-and-inbox-clarity.md).
+
+- **Note — new entity.** Team-authored prose on a Report. The log is **append-only** — a
+  Note is never deleted, matching "Reports are permanent" — but each Note's **text is
+  editable by its author** (revised the same day, see below), always with a visible
+  edited-at stamp (a silent edit would let a decision quietly become a different one).
+  Author/editor and timestamps stamped server-side from the JWT, never the body. Body
+  1–2000 chars (mirrors description). Any Member may *write* on any report in any status;
+  free-floating from status changes; oldest-first. Convention, not code: a *changed
+  decision* gets a new Note — edits are for typos and clarity.
+  **Revised 2026-08-29 (same day, pre-merge): editing is author-only.** This first read
+  "editable by any Member, safeguarded by an edited-by stamp". On first sight of the built
+  screens the developer reversed it: the ledger renders as attributed per-person entries
+  rather than the single shared notes field they had pictured, which makes a Note read as
+  **signed testimony** — nobody writes under someone else's name. A non-author's edit is
+  `403`, the same answer INV-2 gives for another Member's time entry, so the app has one
+  ownership rule instead of two. Cost accepted: a typo in a teammate's note needs them, or
+  a follow-up Note.
+  **Rejected:** a single mutable notes field (last-writer-wins destroys attribution — the
+  point was that decisions survive); strict immutability (developer call: typo friction
+  outweighs tamper-evidence among four founders); any-Member editing with an edited-by
+  stamp (the original call, reversed above); a unified status+notes activity log
+  (needs status *history* the schema doesn't keep — a visible non-decision).
+  **Comments stay excluded:** no threads, no replies, and no Note is ever
+  reporter-visible.
+- **Team API (bearer-JWT, standard conventions).** `GET /api/reports` embeds each
+  report's notes oldest-first (id, body, author name, `createdAt`, editor name +
+  `editedAt` when edited). `POST /api/reports/{id}/notes` `{ "body": "..." }` → `201`
+  created Note; `PUT /api/reports/{id}/notes/{noteId}` `{ "body": "..." }` → `200`
+  updated Note (**author-only**; another Member's note → `403`). **No DELETE endpoint
+  exists.** Unknown ids → `404`; empty/oversized body → `400`, envelope key `body`.
+  The intake route learns nothing about notes.
+- **Schema: migration V6** — `report_notes`: server-generated UUID PK · report FK ·
+  author FK `users(id)` NOT NULL · body ≤2000 · `created_at` · `edited_by` FK
+  `users(id)` NULL · `edited_at` NULL. No change to `reports`.
+- **Inbox freshness: focused polling.** ~60s refetch while the Reports tab is focused,
+  on top of the existing focus/foreground refetch. Client-only. **Rejected:** SSE (React
+  Native has no native EventSource; browser EventSource can't send the bearer header;
+  Railway sleep severs long-lived connections) and WebSockets (the largest backend
+  surface for one-way data). Push latency is theater downstream of a store-and-forward
+  intake that lags by Largata's retry backoff — the delivery lag itself is
+  [ticket 09](issues/09-ingest-lag-measure-then-tune.md), and no inbox feature fixes it.
+- **Screen rework (same theme, zero new tokens):** the detail screen elevates the
+  reporter's words to the primary block (testimony scale), surfaces the status pill in
+  the top row, and adds the Notes section; the list row gains a two-line snippet and a
+  note count. Full design direction lives in ticket 08.
+- **Open filter defaults to New** (added 2026-08-29 from the developer's review of the
+  live build). Landing on the full open list made the unselected chip row look like
+  nothing was filtering when in fact it was showing a superset. The inbox now opens on
+  **New** — what the inbox is *for*: untriaged feedback that still needs someone — and
+  returning to the Open segment resets to New. The chips keep their toggle behaviour, so
+  clearing the active chip still widens to every open report; that view is now something
+  you choose rather than where you land. Client-only; the badge still counts `new` from
+  the data, not from the filter.
+  **Rejected:** a dedicated "All open" chip with strict single-select (built first, then
+  removed at the developer's call — an extra chip to name a state that untoggling already
+  reaches, on a row that only has three).
+- **Picking a status is acknowledged instantly** (same review). The sheet used to show
+  only a spinner while the write was in flight, so the tap itself looked unregistered:
+  now the chosen row highlights, its dot springs, and a tick fades in the moment you
+  press — the spinner that follows means "still saving", not "did that register?".
+  A failed move also surfaces **in the sheet**: the screen's error line sits behind the
+  modal, so before this a failed status change was invisible.
+- **Deferred, explicitly:** device context on reports — wanted for problem triage, but it
+  moves the wire contract (**that** is the reserved v1.2) and needs a Largata-side
+  session. Single record, with the scoping notes:
+  [07 — epic map](../../design/07-epic-map.md), "Unscheduled Epic 3 candidates".

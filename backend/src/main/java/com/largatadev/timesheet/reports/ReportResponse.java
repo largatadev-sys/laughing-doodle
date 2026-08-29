@@ -8,6 +8,10 @@ import java.util.UUID;
  * A Report as the API returns it — to the relay on intake, and to Members on the team routes.
  * Never carries screenshot bytes: only the ordinals, which the client fetches individually
  * from the screenshot route.
+ *
+ * <p>{@code notes} is the team's own writing and is populated on the team routes only. The
+ * intake path passes an empty list on every response, replay included: Largata relays reports
+ * in, it never reads what the team said about them.
  */
 public record ReportResponse(
 		UUID id,
@@ -24,9 +28,11 @@ public record ReportResponse(
 		Long statusChangedBy,
 		String statusChangedByName,
 		OffsetDateTime statusChangedAt,
-		List<Integer> screenshotOrdinals) {
+		List<Integer> screenshotOrdinals,
+		List<ReportNoteResponse> notes) {
 
-	public static ReportResponse of(Report report, String statusChangedByName, List<Integer> screenshotOrdinals) {
+	public static ReportResponse of(Report report, String statusChangedByName,
+			List<Integer> screenshotOrdinals, List<ReportNoteResponse> notes) {
 		return new ReportResponse(
 				report.getId(),
 				wire(report.getType()),
@@ -42,7 +48,8 @@ public record ReportResponse(
 				report.getStatusChangedBy(),
 				statusChangedByName,
 				report.getStatusChangedAt(),
-				screenshotOrdinals);
+				screenshotOrdinals,
+				notes);
 	}
 
 	/** Enums travel over the wire in the same lowercase form they take in the database

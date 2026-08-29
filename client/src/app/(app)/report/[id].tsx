@@ -4,9 +4,11 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ReportNotes } from '@/components/ReportNotes';
 import { ReportScreenshots } from '@/components/ReportScreenshots';
+import { ReportStatusPill } from '@/components/ReportStatusPill';
 import { Card, Eyebrow, Scroll } from '@/components/ui';
-import type { PressState } from '@/components/ui/press';
+import { noTextSelect, type PressState } from '@/components/ui/press';
 import { activityLabel } from '@/lib/datetime';
 import { useReports } from '@/lib/reports';
 import {
@@ -23,6 +25,11 @@ import { colors, fonts, radius, space, type } from '@/theme';
 // The rail carries the forward path only; Dismissed is deliberately off it.
 const FORWARD_STATUSES = STATUS_ORDER.filter((s) => s !== 'dismissed');
 
+// Past this length the testimony steps down a size, so a 2000-character report reads as a
+// document rather than a poster. Scale contrast is what does the emphasis on this screen —
+// there is no quote rule and no background wash.
+const LONG_DESCRIPTION = 280;
+
 // Shorter labels for the rail, where four nodes share one row. "For discussion" becomes
 // "Discussion" here only — the full label is what the pill and the sheet show.
 const RAIL_LABELS: Record<ReportStatus, string> = {
@@ -32,7 +39,7 @@ const RAIL_LABELS: Record<ReportStatus, string> = {
 
 export default function ReportDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { reports, changeStatus: moveReport } = useReports();
+  const { reports, changeStatus: moveReport, addNote, editNote } = useReports();
   const insets = useSafeAreaInsets();
   const [saving, setSaving] = useState<ReportStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,10 +92,20 @@ export default function ReportDetail() {
               <Feather name={TYPE_ICONS[report.type]} size={17} color={colors.brand} />
             </View>
             <Eyebrow>{TYPE_LABELS[report.type]}</Eyebrow>
+            <View style={styles.typeRowSpacer} />
+            {/* Where this report stands, visible on arrival rather than four blocks down. */}
+            <ReportStatusPill status={report.status} />
           </View>
 
-          {/* The reporter's own words, in full and never editable here. */}
-          <Text style={styles.description}>{report.description}</Text>
+          {/* The reporter's own words open the screen, unboxed and never editable here: on a
+              page carrying two voices, the foreign testimony outranks the team's apparatus. */}
+          <Text
+            style={[
+              styles.testimony,
+              report.description.length > LONG_DESCRIPTION && styles.testimonyLong,
+            ]}>
+            {report.description}
+          </Text>
 
           <ReportScreenshots reportId={report.id} ordinals={report.screenshotOrdinals} />
 
@@ -185,6 +202,13 @@ export default function ReportDetail() {
           </View>
 
           {error && <Text style={styles.error}>{error}</Text>}
+
+          {/* Last on the page on purpose: you read what happened, then what the team decided. */}
+          <ReportNotes
+            notes={report.notes}
+            onAdd={(body) => addNote(report.id, body)}
+            onEdit={(noteId, body) => editNote(report.id, noteId, body)}
+          />
         </Scroll>
       )}
     </View>
@@ -219,6 +243,7 @@ const styles = StyleSheet.create({
 
   content: { padding: space.lg, gap: space.lg, paddingBottom: space.xxl },
   typeRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  typeRowSpacer: { flex: 1 },
   glyph: {
     width: 32,
     height: 32,
@@ -227,7 +252,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  description: { ...type.body, fontSize: 16, lineHeight: 24 },
+  // Medium weight, full ink, larger than anything else on the screen — the words are the
+  // material here, not another labelled field.
+  testimony: { ...type.body, fontFamily: fonts.medium, fontSize: 19, lineHeight: 28 },
+  testimonyLong: { fontSize: 17, lineHeight: 26 },
 
   metaCard: { gap: space.sm },
   metaRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
@@ -252,7 +280,7 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: colors.hairline,
   },
-  node: { alignItems: 'center', gap: 6, minWidth: 44, minHeight: 44, cursor: 'pointer' },
+  node: { alignItems: 'center', gap: 6, minWidth: 44, minHeight: 44, cursor: 'pointer', ...noTextSelect },
   nodePressed: { opacity: 0.7 },
   nodeHovered: { opacity: 0.9 },
   nodeDot: {
@@ -279,6 +307,7 @@ const styles = StyleSheet.create({
     borderColor: colors.hairline,
     backgroundColor: colors.surface,
     cursor: 'pointer',
+    ...noTextSelect,
   },
   dismissActive: { backgroundColor: colors.hairline },
   dismissHover: { backgroundColor: colors.bg },

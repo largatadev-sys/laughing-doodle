@@ -1,11 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-import type { PressState } from '@/components/ui/press';
+import { ReportStatusPill } from '@/components/ReportStatusPill';
+import { noTextSelect, type PressState } from '@/components/ui/press';
 import { activityLabel } from '@/lib/datetime';
-import { STATUS_EDGE, STATUS_LABELS, STATUS_TONES, TYPE_ICONS } from '@/lib/reportStatus';
+import { STATUS_EDGE, STATUS_LABELS, TYPE_ICONS } from '@/lib/reportStatus';
 import type { ReportResponse } from '@/lib/types';
-import { colors, fonts, radius, space, type } from '@/theme';
+import { colors, space, type } from '@/theme';
 
 interface ReportRowProps {
   report: ReportResponse;
@@ -15,7 +16,7 @@ interface ReportRowProps {
 }
 
 /**
- * One report as a dense triage row: a single ellipsized line of the reporter's words above a
+ * One report as a dense triage row: two ellipsized lines of the reporter's words above a
  * metadata line, with status carried by a coloured left edge rather than a card border.
  *
  * Tap opens the report; press-and-hold opens the status sheet. Unlike 1b's swipe (removed —
@@ -25,8 +26,10 @@ interface ReportRowProps {
  */
 export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
   const when = activityLabel(report.submittedAt, report.submittedAt).when;
-  const tone = STATUS_TONES[report.status];
   const shots = report.screenshotOrdinals.length;
+  // "· 2 notes" tells you at a glance which reports the team has already reasoned about — the
+  // difference between untouched feedback and a decision someone already made.
+  const notes = report.notes.length;
   // A signed-out reporter is shown honestly, not hidden — auth screens are exactly where
   // "I can't get in" reports come from (contract v1.1).
   const reporter = report.reporterName ?? 'Signed out';
@@ -43,6 +46,7 @@ export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
           `from ${reporter},`,
           STATUS_LABELS[report.status],
           shots > 0 ? `, ${shots} screenshot${shots > 1 ? 's' : ''}` : '',
+          notes > 0 ? `, ${notes} note${notes > 1 ? 's' : ''}` : '',
         ].join(' ')}
         // Screen readers can't press-and-hold, so the triage path is exposed as a named action
         // rather than left as a gesture they have no way to perform.
@@ -65,19 +69,19 @@ export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
         />
 
         <View style={styles.body}>
-          {/* One line only, ellipsized — the reporter's words are never rewritten, just cut. */}
-          <Text style={styles.snippet} numberOfLines={1}>
+          {/* Two lines, ellipsized — enough of the report to triage from without opening it.
+              The reporter's words are never rewritten, just cut. */}
+          <Text style={styles.snippet} numberOfLines={2}>
             {report.description}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
             {reporter} · {platformShort(report)} · {when}
             {shots > 0 ? ` · ${shots} shot${shots > 1 ? 's' : ''}` : ''}
+            {notes > 0 ? ` · ${notes} note${notes > 1 ? 's' : ''}` : ''}
           </Text>
         </View>
 
-        <View style={[styles.pill, { backgroundColor: tone.bg }]}>
-          <Text style={[styles.pillText, { color: tone.fg }]}>{STATUS_LABELS[report.status]}</Text>
-        </View>
+        <ReportStatusPill status={report.status} />
       </Pressable>
     </View>
   );
@@ -103,6 +107,8 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm + 2,
     backgroundColor: colors.surface,
     cursor: 'pointer',
+    // The row is long-pressable; without this the hold paints a text selection instead.
+    ...noTextSelect,
   },
   rowHovered: { backgroundColor: colors.brandSoft },
   rowPressed: { backgroundColor: colors.brandSoft },
@@ -111,13 +117,6 @@ const styles = StyleSheet.create({
   glyph: { width: 18 },
 
   body: { flex: 1, gap: 1 },
-  snippet: { ...type.bodyMedium, fontSize: 14 },
+  snippet: { ...type.bodyMedium, fontSize: 14, lineHeight: 19 },
   meta: { ...type.caption, fontSize: 11.5 },
-
-  pill: {
-    paddingHorizontal: space.sm,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-  },
-  pillText: { fontFamily: fonts.bold, fontSize: 10.5, letterSpacing: 0.2 },
 });

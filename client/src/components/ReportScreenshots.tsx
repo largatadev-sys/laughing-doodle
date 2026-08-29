@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
+import { noTextSelect } from '@/components/ui/press';
 import { useAuthedImage } from '@/lib/useAuthedImage';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { colors, fonts, radius, space, type } from '@/theme';
@@ -378,6 +379,7 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder,
     backgroundColor: colors.surface,
     cursor: 'pointer',
+    ...noTextSelect,
   },
   thumbPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   thumbImage: { width: '100%', height: '100%' },
@@ -417,6 +419,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
+    ...noTextSelect,
   },
   arrowLeft: { left: space.sm },
   arrowRight: { right: space.sm },

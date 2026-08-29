@@ -275,9 +275,31 @@ blockers-first:
   spec "Amendments"). Added 2026-08-28, ahead of the Largata-side relay build: the entry
   point there goes globally visible (signed-out screens included) and reports carry the
   screen the reporter was on.
+- **Story 20** — Team notes + inbox clarity: append-only (any-Member-editable, visibly
+  stamped) Notes log on reports, detail-screen rework elevating the reporter's words,
+  ~60s focused inbox polling
+  ([ticket 08](../tickets/reports-inbox/issues/08-report-notes-and-inbox-clarity.md) ·
+  ADR-012 · spec "Amendments"). Added 2026-08-29: triage decisions were evaporating into
+  chat. Worklog-team-facing only — the wire contract stays v1.1.
 
 Stories 13–18 shipped 2026-08-14 (deployed to dev + prod). Status of record:
 [BUILD_STATUS](../../BUILD_STATUS.md).
+
+Unscheduled Epic 3 candidates (deferred 2026-08-29): **intake contract v1.2 — device
+context on reports.** The single record for this item; the spec and the Story 20 plan
+point here rather than restating it. Add `osVersion` / `deviceModel` / `browser` as
+optional, opaque strings (stored and displayed verbatim, exactly like `screen` — worklog
+never parses a user-agent). The v1.2 number is already reserved for it in the spec's
+amendment log. Two things to know before scoping it: **browser-vs-native app is already
+answerable today** via `platform` (`web` vs `android`/`ios`), so this is only about OS
+version, browser name, and device model; and it **cannot be back-filled or sniffed here** —
+intake is server-to-server, so the request's `User-Agent` is Largata's backend, not the
+reporter's device. Only Largata's client can capture it, at report time, which makes this a
+cross-repo bump needing a Largata-side session; existing reports stay blank forever.
+**Ingest lag, measure-then-tune** —
+[ticket 09](../tickets/reports-inbox/issues/09-ingest-lag-measure-then-tune.md): read the
+persisted `receivedAt − submittedAt` deltas before spending money (Railway always-on) or
+another repo's time (Largata retry backoff).
 
 ## Backlog epics (placeholders — post-validation, signal-driven)
 
