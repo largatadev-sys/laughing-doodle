@@ -124,7 +124,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 18  | Ship: environments, smoke, deploy                            | ✅     | [06](docs/tickets/reports-inbox/issues/06-ship-and-bookkeeping.md) |
 | 19  | Intake contract v1.1: screen context + signed-out reporters  | ✅     | [07](docs/tickets/reports-inbox/issues/07-intake-contract-v1-1.md) |
 | 20  | Team notes + inbox clarity                                   | ✅     | [08](docs/tickets/reports-inbox/issues/08-report-notes-and-inbox-clarity.md) |
-| 21  | Intake contract v1.2: device context (os, browser, deviceModel) | 🔄  | [01](docs/tickets/story-21-device-context/issues/01-intake-contract-v1-2-device-context.md) — tracer bullet ([02](docs/tickets/story-21-device-context/issues/02-device-context-tracer-bullet.md)) implemented 2026-08-29; [03 ship/deploy](docs/tickets/story-21-device-context/issues/03-ship-v1-2-freeze-deploy-handoff.md) pending, so the live wire contract is still v1.1 |
+| 21  | Intake contract v1.2: device context (os, browser, deviceModel) | 🔄  | [01](docs/tickets/story-21-device-context/issues/01-intake-contract-v1-2-device-context.md) — tracer bullet ([02](docs/tickets/story-21-device-context/issues/02-device-context-tracer-bullet.md)) implemented 2026-08-29, squashed to dev at `de36d94`; [03 ship/deploy](docs/tickets/story-21-device-context/issues/03-ship-v1-2-freeze-deploy-handoff.md) pending, so the live wire contract is still v1.1 |
 
 **Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning` over 20 commits —
 the six tickets, then a second pass implementing the Claude Design package, then UI bug fixes —
