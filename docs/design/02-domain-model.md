@@ -32,6 +32,12 @@ product), never about worklog itself._
 - **Screen context** — where the Reporter was **when they opened the report flow** (not
   where the bug happened — no client can know that), carried as an opaque Largata-minted
   string (v1.1). Optional forever; worklog never validates it against Largata's screens.
+- **Device context** — what the Reporter was running when they filed: operating system,
+  browser (browser Reports only — native-app-vs-browser itself is already the platform
+  fact), and device model, each an opaque Largata-minted string. Optional forever;
+  worklog never parses a user-agent and never keeps a vocabulary of browsers or OSes.
+  _(Contract v1.2 — scoped 2026-08-29, **not yet built**; the live contract is v1.1.
+  Story 21: `docs/tickets/story-21-device-context/`.)_
 - **Inbox** — the worklog surface where Reports land and get worked: a fifth tab (bug icon)
   in the pill. Unlike TimeEntries, a Report has **no owner**: every Member reads and updates
   any Report equally.

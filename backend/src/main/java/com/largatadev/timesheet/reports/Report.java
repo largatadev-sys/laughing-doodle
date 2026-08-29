@@ -50,6 +50,18 @@ public class Report implements Persistable<UUID> {
 	@Column
 	private String screen;
 
+	// What the reporter was running when they filed (contract v1.2) — opaque Largata-minted
+	// strings under the same rule as screen: optional forever, never parsed here (worklog
+	// keeps no vocabulary of browsers or OSes). Pre-v1.2 rows stay null on all three forever.
+	@Column
+	private String os;
+
+	@Column
+	private String browser;
+
+	@Column(name = "device_model")
+	private String deviceModel;
+
 	@Column(name = "submitted_at", nullable = false)
 	private OffsetDateTime submittedAt;
 
@@ -75,8 +87,8 @@ public class Report implements Persistable<UUID> {
 	}
 
 	public Report(UUID id, ReportType type, String description, String reporterName, String reporterUid,
-			Platform platform, String appVersion, String screen, OffsetDateTime submittedAt,
-			OffsetDateTime receivedAt) {
+			Platform platform, String appVersion, String screen, String os, String browser,
+			String deviceModel, OffsetDateTime submittedAt, OffsetDateTime receivedAt) {
 		this.id = id;
 		this.type = type;
 		this.description = description;
@@ -85,6 +97,9 @@ public class Report implements Persistable<UUID> {
 		this.platform = platform;
 		this.appVersion = appVersion;
 		this.screen = screen;
+		this.os = os;
+		this.browser = browser;
+		this.deviceModel = deviceModel;
 		this.submittedAt = submittedAt;
 		this.receivedAt = receivedAt;
 		this.status = ReportStatus.NEW;
@@ -135,6 +150,18 @@ public class Report implements Persistable<UUID> {
 
 	public String getScreen() {
 		return screen;
+	}
+
+	public String getOs() {
+		return os;
+	}
+
+	public String getBrowser() {
+		return browser;
+	}
+
+	public String getDeviceModel() {
+		return deviceModel;
 	}
 
 	public OffsetDateTime getSubmittedAt() {

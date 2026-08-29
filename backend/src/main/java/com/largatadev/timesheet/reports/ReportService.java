@@ -30,9 +30,10 @@ public class ReportService {
 	 * get, so neither side of the screen can bury the other. */
 	static final int NOTE_MAX_LENGTH = 2000;
 
-	/** Generous for a route pattern or a human label; the cap is the only validation the
-	 * field gets — its content is Largata's vocabulary, opaque here (contract v1.1). */
-	static final int SCREEN_MAX_LENGTH = 200;
+	/** One rule for every optional context string — screen (v1.1), os, browser and
+	 * deviceModel (v1.2). Generous for a route pattern or a human label; the cap is the only
+	 * validation any of them gets — their content is Largata's vocabulary, opaque here. */
+	static final int CONTEXT_STRING_MAX_LENGTH = 200;
 
 	/** Largata sends its sanitized, downsized display variant; anything larger is a mistake
 	 * or an attack, not a screenshot. */
@@ -88,6 +89,9 @@ public class ReportService {
 				parsed.platform(),
 				parsed.appVersion(),
 				parsed.screen(),
+				parsed.os(),
+				parsed.browser(),
+				parsed.deviceModel(),
 				parsed.submittedAt(),
 				OffsetDateTime.now());
 
@@ -345,23 +349,32 @@ public class ReportService {
 		String reporterName = trimToNull(payload.reporter() == null ? null : payload.reporter().name());
 		String reporterUid = trimToNull(payload.reporter() == null ? null : payload.reporter().uid());
 
-		String rawPlatform = payload.context() == null ? null : payload.context().platform();
-		Platform platform = parseEnum(Platform.class, rawPlatform).orElse(null);
+		IntakePayload.Context context = payload.context();
+
+		Platform platform = parseEnum(Platform.class, context == null ? null : context.platform())
+				.orElse(null);
 		if (platform == null) {
 			details.put("context.platform", "must be one of: android, ios, web");
 		}
 
-		String appVersion = payload.context() == null ? null : payload.context().appVersion();
+		String appVersion = context == null ? null : context.appVersion();
 		if (isBlank(appVersion)) {
 			details.put("context.appVersion", "is required");
 		}
 
-		// Optional; length-capped and nothing else — the value is Largata's vocabulary
-		// (route pattern or label, that repo's call), never validated against a route table.
-		String screen = trimToNull(payload.context() == null ? null : payload.context().screen());
-		if (screen != null && screen.length() > SCREEN_MAX_LENGTH) {
-			details.put("context.screen", "must be at most " + SCREEN_MAX_LENGTH + " characters");
-		}
+		// The optional context strings: length-capped and nothing else — each value is
+		// Largata's vocabulary (a route pattern, an OS or browser label, a model code),
+		// never validated against a route table or a vocabulary of browsers and OSes.
+		// No cross-field rule either: a native build sending browser is stored as sent,
+		// because under store-and-forward every 400 is a silently lost report.
+		String screen = optionalContextString(
+				context == null ? null : context.screen(), "context.screen", details);
+		String os = optionalContextString(
+				context == null ? null : context.os(), "context.os", details);
+		String browser = optionalContextString(
+				context == null ? null : context.browser(), "context.browser", details);
+		String deviceModel = optionalContextString(
+				context == null ? null : context.deviceModel(), "context.deviceModel", details);
 
 		OffsetDateTime submittedAt = null;
 		if (isBlank(payload.submittedAt())) {
@@ -379,7 +392,8 @@ public class ReportService {
 		}
 
 		return new ParsedIntake(id, type, description, reporterName, reporterUid,
-				platform, appVersion.trim(), screen, submittedAt, screenshots);
+				platform, appVersion.trim(), screen, os, browser, deviceModel,
+				submittedAt, screenshots);
 	}
 
 	/**
@@ -444,12 +458,23 @@ public class ReportService {
 		return isBlank(value) ? null : value.trim();
 	}
 
+	/** The one rule every optional context string gets (screen, os, browser, deviceModel):
+	 * trimmed, blank -> null, length-capped under the caller's dotted envelope key. */
+	private static String optionalContextString(String raw, String field, Map<String, Object> details) {
+		String value = trimToNull(raw);
+		if (value != null && value.length() > CONTEXT_STRING_MAX_LENGTH) {
+			details.put(field, "must be at most " + CONTEXT_STRING_MAX_LENGTH + " characters");
+		}
+		return value;
+	}
+
 	/** An accepted Report plus whether this delivery is the one that created it (`201` vs `200`). */
 	public record Intake(ReportResponse report, boolean created) {
 	}
 
 	private record ParsedIntake(UUID id, ReportType type, String description, String reporterName,
 			String reporterUid, Platform platform, String appVersion, String screen,
+			String os, String browser, String deviceModel,
 			OffsetDateTime submittedAt, List<IncomingScreenshot> screenshots) {
 	}
 }

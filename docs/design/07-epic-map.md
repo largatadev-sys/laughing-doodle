@@ -286,16 +286,16 @@ Stories 13–18 shipped 2026-08-14 (deployed to dev + prod). Status of record:
 [BUILD_STATUS](../../BUILD_STATUS.md).
 
 Unscheduled Epic 3 candidates (deferred 2026-08-29): **intake contract v1.2 — device
-context on reports.** The single record for this item; the spec and the Story 20 plan
-point here rather than restating it. Add `osVersion` / `deviceModel` / `browser` as
-optional, opaque strings (stored and displayed verbatim, exactly like `screen` — worklog
-never parses a user-agent). The v1.2 number is already reserved for it in the spec's
-amendment log. Two things to know before scoping it: **browser-vs-native app is already
-answerable today** via `platform` (`web` vs `android`/`ios`), so this is only about OS
-version, browser name, and device model; and it **cannot be back-filled or sniffed here** —
-intake is server-to-server, so the request's `User-Agent` is Largata's backend, not the
-reporter's device. Only Largata's client can capture it, at report time, which makes this a
-cross-repo bump needing a Largata-side session; existing reports stay blank forever.
+context on reports.** Scoped and signed off later the same day (field set + additive V7
+shape; implementation deliberately deferred) — now **Story 21**, with its own directory
+[docs/tickets/story-21-device-context/](../tickets/story-21-device-context/issues/01-intake-contract-v1-2-device-context.md)
+(scoping record 01, sliced into 02 tracer bullet → 03 ship; 02 is ready-for-agent) and
+the spec's "Amendments → v1.2 (planned)" section;
+this entry is now just the pointer. One-line summary: `context.os` / `context.browser` /
+`context.deviceModel`, optional opaque strings ≤200 chars like `screen`; capture is
+Largata-client-side only (intake is server-to-server — nothing can be sniffed or
+back-filled here), so the visible payoff needs a Largata-side session after worklog's
+half ships. The live wire contract stays v1.1 until then.
 **Ingest lag, measure-then-tune** —
 [ticket 09](../tickets/reports-inbox/issues/09-ingest-lag-measure-then-tune.md): read the
 persisted `receivedAt − submittedAt` deltas before spending money (Railway always-on) or

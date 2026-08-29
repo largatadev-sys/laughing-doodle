@@ -99,6 +99,32 @@ class ListReportsEndpointTest {
 	}
 
 	@Test
+	void deviceContextTravelsOnTheTeamList() throws Exception {
+		// Contract v1.2: the team list carries what the reporter was running, nulls included
+		// for pre-v1.2 rows — the client's Device row is built from these three verbatim.
+		reportRepository.save(new Report(
+				UUID.randomUUID(),
+				ReportType.PROBLEM,
+				"Blank map on web.",
+				"Ada Traveler",
+				"largata-uid-1",
+				Platform.WEB,
+				"1.4.2",
+				"(tabs)/(trips)/map",
+				"Windows 11",
+				"Chrome 128",
+				"Pixel 6",
+				OffsetDateTime.now(ZoneOffset.UTC),
+				OffsetDateTime.now(ZoneOffset.UTC)));
+
+		mockMvc.perform(get("/api/reports").header("Authorization", "Bearer " + memberToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].os").value("Windows 11"))
+				.andExpect(jsonPath("$[0].browser").value("Chrome 128"))
+				.andExpect(jsonPath("$[0].deviceModel").value("Pixel 6"));
+	}
+
+	@Test
 	void unknownStatusFilterReturns400() throws Exception {
 		mockMvc.perform(get("/api/reports?status=archived").header("Authorization", "Bearer " + memberToken()))
 				.andExpect(status().isBadRequest())
@@ -138,6 +164,7 @@ class ListReportsEndpointTest {
 				Platform.ANDROID,
 				"1.4.2",
 				"(tabs)/(home)",
+				null, null, null,
 				submittedAt,
 				OffsetDateTime.now(ZoneOffset.UTC));
 		return reportRepository.save(report);

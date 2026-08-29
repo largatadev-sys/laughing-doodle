@@ -6,6 +6,10 @@ Amended: 2026-08-28 — contract **v1.1** (screen context + signed-out reporters
 and signed off in-session (the schema change's stop-rule ask). See "Amendments" at the end;
 the contract sections below are edited in place to v1.1 — this spec stays the single
 hand-off artifact for the Largata repo.
+Planned: contract **v1.2** (device context — `os`, `browser`, `deviceModel`), scoped and
+signed off 2026-08-29 but **not yet built: the contract sections below are still v1.1**.
+See "Amendments → v1.2 (planned)" and
+[Story 21's scoping ticket](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md).
 Origin: grilling session 2026-08-13 (design confirmed by the developer; the confirmation
 is the explicit sign-off both stop-rules require — new schema, new authenticated surface).
 Scope: **worklog's half only.** The Largata-side half (report form, accept endpoint,
@@ -332,7 +336,72 @@ the real v1.2.) Recorded as **ADR-012**; story/ticket: Story 20 /
   press — the spinner that follows means "still saving", not "did that register?".
   A failed move also surfaces **in the sheet**: the screen's error line sits behind the
   modal, so before this a failed status change was invisible.
+
+### v1.2 (planned) — Device context: os, browser, deviceModel (scoped 2026-08-29, NOT YET BUILT)
+
+**The live contract is still v1.1.** This section records the next bump ahead of its
+build: field set and schema shape were signed off by the developer 2026-08-29 (the
+stop-rule ask), then the full design was grilled the same day — six decisions (os field
+shape · flat envelope · field-set completeness · validation stance · rendering ·
+glossary term), all settled and recorded here — with implementation deliberately
+deferred — spec + ticket only, no code or schema change yet. The contract sections above get edited in place to v1.2 only when
+worklog's half ships (Story 21 —
+[scoping ticket 01](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md)).
+**Largata must not send these fields until then:** today's deployment doesn't store them
+(unknown JSON properties are dropped on arrival — Jackson 3 default, unpinned by any
+test), so device context sent early is lost for good, silently.
+
+Trigger: problem triage wants "which browser, if a browser — which OS — or was it the
+native app". Native-vs-browser is already answerable via `platform` (`web` vs
+`android`/`ios`); what's missing is the OS (unknowable today for `web` reporters even as
+a name), the browser, and the device model. None of it can be sniffed at intake — the
+relay is server-to-server, so the request's `User-Agent` is Largata's backend — which
+also means **nothing back-fills**: every report arriving before the Largata-side capture
+ships stays blank on these fields forever. That is why all three wanted fields go in one
+bump.
+
+- **`context.os`, `context.browser`, `context.deviceModel` — new, each optional,
+  ≤200 chars.** Opaque strings exactly like `screen`: stored and rendered verbatim, no
+  format or vocabulary validation ever (worklog never parses a user-agent and never
+  keeps a whitelist of browsers or OSes). Absent → null; overlong → `400` with the
+  dotted envelope key. `os` carries name **and** version as Largata formats it
+  ("Windows 11", "iOS 17.5") — one field, not the epic-map sketch's `osVersion`, because
+  for web reporters the OS *name* is the payload. `browser` is expected only when
+  `platform="web"`; a native build sending one is stored as sent, never a `400` (the
+  standing store-and-forward rule: every `400` is a silently lost report).
+- **Inbox rendering:** the detail metadata block gains **one combined Device row**
+  ("Chrome 128 · Windows 11 · Pixel 6") — null parts omitted, the whole row omitted when
+  all three are null. The three facts are consumed together ("what were they running?"),
+  and the Story 20 rework keeps the reporter's words dominant — three separate label
+  rows would work against it. List row unchanged. The domain model gains **Device
+  context** as a sibling term of Screen context (landed at scoping, marked not-yet-built).
+- **Rejected:** a raw `context.userAgent` (either the inbox renders an unreadable UA
+  string verbatim or worklog starts parsing user-agents — ruled out at scoping);
+  shipping only `browser` + `os` now (the developer's literal ask) with `deviceModel`
+  later — no back-fill means every report in between would lack the "crashes on
+  Pixel 6" answer for good, so the full set goes at once; splitting `osName` /
+  `osVersion` (worklog renders, never parses — double the surface for nothing);
+  nesting `context.device.{os,browser,model}` (the grouping is a vocabulary concern —
+  the glossary's **Device context** term does that job; the wire stays a flat bag of
+  opaque strings matching `screen`, dotted envelope keys included); further speculative
+  fields — `locale`, viewport, `timeZone` (the no-back-fill argument only bites for
+  fields triage will actually consult; forever-null columns are their own noise — a
+  later bump with evidence behind it beats guessing now).
+
+Schema sketch: migration **V7** — three nullable `VARCHAR(200)` columns on `reports`,
+additive only. Statuses, screenshots, notes, idempotency, both auth schemes: untouched.
+Build checklist, field semantics for the Largata capture, and test additions live in
+**Story 21's own directory** (`../story-21-device-context/` — this spec stays here as the
+contract's home): scoping record
+[01](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md), sliced
+into [02](../story-21-device-context/issues/02-device-context-tracer-bullet.md) (tracer
+bullet, three fields end-to-end) →
+[03](../story-21-device-context/issues/03-ship-v1-2-freeze-deploy-handoff.md) (ship:
+contract freeze, deploy, Largata hand-off); the intake tests remain the contract tests
+and will pin all of the above when it builds.
 - **Deferred, explicitly:** device context on reports — wanted for problem triage, but it
   moves the wire contract (**that** is the reserved v1.2) and needs a Largata-side
-  session. Single record, with the scoping notes:
-  [07 — epic map](../../design/07-epic-map.md), "Unscheduled Epic 3 candidates".
+  session. _Scoped later the same day (2026-08-29): see "Amendments → v1.2 (planned)"
+  below and
+  [Story 21's scoping ticket](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md),
+  now the record for it (its own directory, per the story-per-directory convention)._

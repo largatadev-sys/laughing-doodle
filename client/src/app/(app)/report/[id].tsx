@@ -48,6 +48,13 @@ export default function ReportDetail() {
   // than refetching one report — there is no single-report endpoint and no need for one.
   const report = useMemo(() => (reports ?? []).find((r) => r.id === id), [reports, id]);
 
+  // browser · OS · device model, null parts dropped: the three facts are read together, so
+  // they share one row instead of stacking three more labels under the testimony. Empty —
+  // and the row below omitted — on pre-v1.2 reports, which send none of them.
+  const device = report
+    ? [report.browser, report.os, report.deviceModel].filter(Boolean).join(' · ')
+    : '';
+
   async function changeStatus(status: ReportStatus) {
     // Selecting the current status sends no request (spec §4).
     if (!report || status === report.status) return;
@@ -115,6 +122,8 @@ export default function ReportDetail() {
             {/* Where they were when they opened the report flow — Largata's wording,
                 rendered verbatim; absent on reports from builds that don't send it. */}
             {report.screen && <MetaRow label="Screen" value={report.screen} />}
+            {/* What they were running when they filed — Largata's wording verbatim. */}
+            {device !== '' && <MetaRow label="Device" value={device} />}
             <MetaRow label="Submitted" value={activityLabel(report.submittedAt, report.submittedAt).when} />
             {/* Received differs from submitted whenever Largata had to retry delivery. */}
             <MetaRow label="Received" value={activityLabel(report.receivedAt, report.receivedAt).when} />

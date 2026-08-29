@@ -356,6 +356,108 @@ class IntakeEndpointTest {
 	}
 
 	@Test
+	void deviceContextIsAcceptedAndEchoedByBothIntakeResponses() throws Exception {
+		// Contract v1.2: os, browser and deviceModel ride the same rule as screen — optional,
+		// opaque, length-capped, never parsed. The replay echo proves the values were stored,
+		// not merely reflected off the request.
+		UUID reportId = UUID.randomUUID();
+		String json = """
+				{"reportId":"%s","type":"problem","description":"Map tiles never render.",
+				 "reporter":{"name":"Ada Traveler","uid":"largata-uid-1"},
+				 "context":{"platform":"web","appVersion":"1.4.2","screen":"(tabs)/(trips)/map",
+				  "os":"Windows 11","browser":"Chrome 128","deviceModel":"Pixel 6"},
+				 "submittedAt":"2026-08-12T09:15:30Z"}
+				""".formatted(reportId);
+
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(json))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.os").value("Windows 11"))
+				.andExpect(jsonPath("$.browser").value("Chrome 128"))
+				.andExpect(jsonPath("$.deviceModel").value("Pixel 6"));
+
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(json))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.os").value("Windows 11"))
+				.andExpect(jsonPath("$.browser").value("Chrome 128"))
+				.andExpect(jsonPath("$.deviceModel").value("Pixel 6"));
+	}
+
+	@Test
+	void missingDeviceContextIsAcceptedAndEchoesNulls() throws Exception {
+		// The fields are optional forever: pre-v1.2 Largata builds keep landing, absent -> null.
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(payload(UUID.randomUUID(), "idea", "Pre-v1.2 build shape.")))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.os").value(nullValue()))
+				.andExpect(jsonPath("$.browser").value(nullValue()))
+				.andExpect(jsonPath("$.deviceModel").value(nullValue()));
+	}
+
+	@Test
+	void overlongOsReturns400WithFieldDetail() throws Exception {
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(payloadWithContextField("os", "o".repeat(201))))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+				.andExpect(jsonPath("$.error.details['context.os']").exists());
+
+		assertThat(reportRepository.count()).isZero();
+	}
+
+	@Test
+	void overlongBrowserReturns400WithFieldDetail() throws Exception {
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(payloadWithContextField("browser", "b".repeat(201))))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+				.andExpect(jsonPath("$.error.details['context.browser']").exists());
+
+		assertThat(reportRepository.count()).isZero();
+	}
+
+	@Test
+	void overlongDeviceModelReturns400WithFieldDetail() throws Exception {
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(payloadWithContextField("deviceModel", "d".repeat(201))))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error.code").value("VALIDATION_FAILED"))
+				.andExpect(jsonPath("$.error.details['context.deviceModel']").exists());
+
+		assertThat(reportRepository.count()).isZero();
+	}
+
+	@Test
+	void nativeReportSendingBrowserIsStoredAsSent() throws Exception {
+		// browser is expected only from web reports, but a native build sending one is a
+		// Largata bug, not the reporter's — and under store-and-forward a 400 here would
+		// silently lose the feedback. Length is the only rule; there is no cross-field rule.
+		String json = payloadWithContextField("browser", "Chrome 128");
+
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(json))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.platform").value("android"))
+				.andExpect(jsonPath("$.browser").value("Chrome 128"));
+
+		// The replay reads the stored row, so this pins "stored as sent" — not merely
+		// echoed off the request.
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(json))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.browser").value("Chrome 128"));
+	}
+
+	@Test
 	void malformedJsonPartReturns400() throws Exception {
 		mockMvc.perform(multipart("/api/intake/reports")
 						.file(reportPart("{ this is not json"))
@@ -377,6 +479,17 @@ class IntakeEndpointTest {
 	static MockMultipartFile reportPart(String json) {
 		return new MockMultipartFile("report", "report.json", "application/json",
 				json.getBytes(StandardCharsets.UTF_8));
+	}
+
+	/** A native-platform payload carrying exactly one device-context field — the probe shape
+	 * for the per-field length rule and the browser-from-a-native-build case. */
+	static String payloadWithContextField(String field, String value) {
+		return """
+				{"reportId":"%s","type":"problem","description":"Device context probe.",
+				 "reporter":{"name":"Ada Traveler","uid":"largata-uid-1"},
+				 "context":{"platform":"android","appVersion":"1.4.2","%s":"%s"},
+				 "submittedAt":"2026-08-12T09:15:30Z"}
+				""".formatted(UUID.randomUUID(), field, value);
 	}
 
 	static String payload(UUID reportId, String type, String description) {

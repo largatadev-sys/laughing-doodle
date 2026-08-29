@@ -196,6 +196,7 @@ class UpdateReportStatusEndpointTest {
 				Platform.ANDROID,
 				"1.4.2",
 				"(tabs)/(home)",
+				null, null, null,
 				OffsetDateTime.now(ZoneOffset.UTC).minusHours(3),
 				OffsetDateTime.now(ZoneOffset.UTC)));
 	}

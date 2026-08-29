@@ -359,6 +359,7 @@ class CreateReportNoteEndpointTest {
 				Platform.ANDROID,
 				"1.4.2",
 				"(tabs)/(home)",
+				null, null, null,
 				submittedAt,
 				OffsetDateTime.now(ZoneOffset.UTC)));
 	}

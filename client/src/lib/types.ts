@@ -74,6 +74,11 @@ export interface ReportResponse {
   /** Where the reporter was when they opened the report flow — an opaque Largata-minted
    *  string; null on reports from builds that don't send it (contract v1.1). */
   screen: string | null;
+  /** What the reporter was running when they filed — opaque Largata-minted strings
+   *  (contract v1.2); each null on reports from builds that don't send it. */
+  os: string | null;
+  browser: string | null;
+  deviceModel: string | null;
   /** When the reporter hit send. Display and sort key — a retried relay must not reorder. */
   submittedAt: string;
   /** When worklog received it; later than submittedAt whenever delivery was retried. */

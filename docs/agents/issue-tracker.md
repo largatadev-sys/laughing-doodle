@@ -7,7 +7,13 @@ gitignored scratch area).
 
 ## Conventions
 
-- One feature per directory: `docs/tickets/<feature-slug>/`
+- One story per directory: `docs/tickets/<story-slug>/` (e.g. `story-21-device-context`) —
+  clarified 2026-08-29; this is also the repo's dominant historical pattern (`story-3-…`,
+  `story-12-…`). A standing multi-story feature directory (`reports-inbox/`) exists where
+  a shared spec lives: the spec stays there permanently as the single hand-off artifact,
+  but a new story gets its own directory even when it amends that spec — its tickets link
+  back to the spec. Stories 19–20's tickets (07–13) predate the clarification and stay in
+  `reports-inbox/issues/` as frozen records.
 - The spec is `docs/tickets/<feature-slug>/spec.md` (when a spec exists — this repo
   usually specs work via `docs/plans/story-N-*.md` instead; see
   [docs/agents/domain.md](domain.md))
