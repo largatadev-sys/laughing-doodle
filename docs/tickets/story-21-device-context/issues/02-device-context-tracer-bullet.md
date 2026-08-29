@@ -12,9 +12,11 @@ rendering unchanged. Contract-level definition: `../../reports-inbox/spec.md`,
 **Blocked by:** None (can start immediately) — the schema stop-rule ask was signed off
 at scoping (2026-08-29, ticket 01).
 
-**Status:** ready-for-human — implemented 2026-08-29 (full backend suite green; client
-typecheck clean; V7 confirmed applied by a live `bootRun` against the compose Postgres).
-Remaining for the developer: the manual UI checklist below, then [ticket 03](03-ship-v1-2-freeze-deploy-handoff.md).
+**Status:** done — implemented and verified 2026-08-29 (full backend suite green; client
+typecheck clean; V7 confirmed applied by a live `bootRun` against the compose Postgres;
+developer's live phone check against the LAN fullstack gate passed). Squashed to `dev` at
+`de36d94`. Next: [ticket 03](03-ship-v1-2-freeze-deploy-handoff.md) — until it ships, the
+live wire contract stays v1.1 and Largata must not send the fields.
 
 - [x] Migration V7: three nullable ≤200-char columns on `reports`, additive only, all in
       the one migration (V6 precedent: the schema lands once).
@@ -36,8 +38,13 @@ Remaining for the developer: the manual UI checklist below, then [ticket 03](03-
       silent-Flyway lesson — the test suite alone doesn't prove autoconfigured migration).
       Verified 2026-08-29: Flyway log "Migrating schema public to version 7 - device
       context … Successfully applied", and `\d reports` shows all three columns.
-- [ ] Manual UI checklist (standing no-automated-e2e decision): a v1.2 report shows the
+- [x] Manual UI checklist (standing no-automated-e2e decision): a v1.2 report shows the
       Device row; a pre-v1.2 report renders unchanged (no row); a signed-out v1.2 report
-      shows "Signed out" and the Device row together. **Developer's check — note the
-      running fullstack-gate container predates this change; rebuild it first
-      (`docker compose --profile fullstack up --build`).**
+      shows "Signed out" and the Device row together. **Done 2026-08-29 — the developer
+      exercised it live from a phone** against the rebuilt fullstack gate on the LAN
+      (`http://192.168.1.115:8080`, smoke ALL PASS), over a seeded spread covering every
+      device-context combination: each field alone, each pair, all three, a native report
+      carrying `browser` (stored as sent), near-cap values, non-ASCII values, one with
+      screenshots, one signed-out, and a pre-v1.2 shape as the regression control.
+      Reported all good. _(This gate is not a deployment — dev/prod remain on v1.1 until
+      [ticket 03](03-ship-v1-2-freeze-deploy-handoff.md).)_
