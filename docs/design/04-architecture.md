@@ -270,5 +270,38 @@ on-demand full-stack parity gate. The fast native daily loop this ADR protects i
   than superseded → revisit toward note versioning, a proper activity log, or a
   soft-delete that keeps the row.
 
+**ADR-013 — Intake contract v1.2: device context as three flat opaque strings.**
+- *Context.* 2026-08-29. Problem triage kept asking "which browser, which OS, or was it
+  the native app?" of reports that could not answer. Native-vs-browser was already
+  answerable (`context.platform`), the rest was not — and intake is server-to-server, so
+  the `User-Agent` worklog sees is Largata's backend, never the reporter's device. Only
+  Largata's client can capture this, at report time, and **nothing back-fills**: every
+  report filed before that capture ships stays blank forever. Spec:
+  `docs/tickets/reports-inbox/spec.md`, "Amendments → v1.2".
+- *Decision.* Three optional fields join `context`, each following `screen`'s rule
+  verbatim (ADR-011): `os`, `browser`, `deviceModel` — opaque Largata-minted strings,
+  ≤200 chars, absent → null, overlong → `400` with the dotted key, and **no format or
+  vocabulary validation ever** (worklog never parses a user-agent and keeps no list of
+  browsers or OSes). `os` carries name *and* version in one field, because for web
+  reporters the OS *name* is the payload. A native report sending `browser` is stored as
+  sent, not rejected — under store-and-forward every `400` is a silently lost report. All
+  three land in one bump rather than trickling across versions, precisely because the
+  no-back-fill rule makes each deferred field a permanent hole. The inbox renders them as
+  **one combined Device row** in the detail screen, null parts omitted.
+- *Alternatives rejected.* (1) A raw `userAgent` string — pushes parsing into worklog, the
+  one thing this design refuses. (2) `browser` + `os` only (the literal ask), deferring
+  `deviceModel` — no back-fill means every report in between permanently lacks the
+  "crashes on a Pixel 6" answer. (3) Splitting `osName`/`osVersion` — double the surface
+  for a value that is only ever rendered. (4) Nesting `context.device.{…}` — the grouping
+  is a vocabulary concern the glossary term already carries; the wire stays a flat bag of
+  opaque strings matching `screen`, dotted envelope keys included. (5) Further fields —
+  `locale`, viewport, `timeZone` — speculative; forever-null columns are their own noise.
+- *Assumption.* Largata's client can name the OS, browser and model well enough to be
+  useful without worklog imposing a vocabulary; the values are for a human triaging, not
+  for aggregation or filtering.
+- *Invalidates it.* Wanting to *count* or *filter* by browser/OS — grouping demands a
+  normalized vocabulary, which is exactly what this ADR declines to own; revisit toward
+  parsing at the Largata edge into agreed enums, never toward parsing here.
+
 **Deferred (until validated).** Caching, read replicas, async/queues, rate limiting,
 real observability — explicitly **not** decided now; revisit signal-driven post-validation.

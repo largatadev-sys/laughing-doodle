@@ -10,14 +10,14 @@ for good.
 
 **Blocked by:** [02 — Device context tracer bullet](02-device-context-tracer-bullet.md).
 
-**Status:** ready-for-agent
+**Status:** in progress — docs flipped 2026-08-29; deploy underway.
 
-- [ ] Docs flip to "implemented": spec wire-contract sections edited in place to v1.2 +
+- [x] Docs flip to "implemented": spec wire-contract sections edited in place to v1.2 +
       the "planned" amendment marked implemented (and the header's "Planned" pointer
-      retired); ADR (next free number) recorded in 04; domain model (02) drops the
+      retired); **ADR-013** recorded in 04; domain model (02) drops the
       Device-context "not yet built" marker; epic map retires the unscheduled-candidate
-      pointer; BUILD_STATUS Story 21 row.
-- [ ] Ticket 01's checklist reconciled — it stays the scoping record; this ticket and 02
+      pointer (Story 21 now sits with the other Epic 3 stories); BUILD_STATUS Story 21 row.
+- [x] Ticket 01's checklist reconciled — it stays the scoping record; this ticket and 02
       are its implementation slices.
 - [ ] Deploy in the standing sequence: local fullstack gate + smoke first, smoke the dev
       environment, then promote `dev` → `main` and deploy prod; smoke ALL PASS on both

@@ -4,12 +4,12 @@ Status: ready-for-agent
 Date: 2026-08-13
 Amended: 2026-08-28 — contract **v1.1** (screen context + signed-out reporters), grilled
 and signed off in-session (the schema change's stop-rule ask). See "Amendments" at the end;
-the contract sections below are edited in place to v1.1 — this spec stays the single
+the contract sections below are edited in place — this spec stays the single
 hand-off artifact for the Largata repo.
-Planned: contract **v1.2** (device context — `os`, `browser`, `deviceModel`), scoped and
-signed off 2026-08-29 but **not yet built: the contract sections below are still v1.1**.
-See "Amendments → v1.2 (planned)" and
-[Story 21's scoping ticket](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md).
+Amended: 2026-08-29 — contract **v1.2** (device context — `os`, `browser`, `deviceModel`),
+grilled and signed off the same day, **built and deployed** (Story 21; ADR-013). The
+contract sections below are v1.2: Largata may now send the three fields. See
+"Amendments → v1.2" and [Story 21](../story-21-device-context/).
 Origin: grilling session 2026-08-13 (design confirmed by the developer; the confirmation
 is the explicit sign-off both stop-rules require — new schema, new authenticated surface).
 Scope: **worklog's half only.** The Largata-side half (report form, accept endpoint,
@@ -102,7 +102,9 @@ instant thank-you in Largata and never see worklog.
   - part `report` (application/json): `{ "reportId": "<uuid>", "type": "problem"|"idea",
     "description": "<1–2000 chars>", "reporter": { "name": "...", "uid": "..." },
     "context": { "platform": "android"|"ios"|"web", "appVersion": "...",
-    "screen": "<optional, ≤200 chars>" }, "submittedAt": "<ISO-8601 instant>" }`
+    "screen": "<optional, ≤200 chars>", "os": "<optional, ≤200 chars>",
+    "browser": "<optional, ≤200 chars>", "deviceModel": "<optional, ≤200 chars>" },
+    "submittedAt": "<ISO-8601 instant>" }`
   - The `report` part must be a **file** part — a filename in its `Content-Disposition`
     (curl: `-F "report=@report.json;type=application/json"`). A bare form field is
     rejected as a missing part (found the hard way during the v1.1 live check).
@@ -118,6 +120,18 @@ instant thank-you in Largata and never see worklog.
     validation, never checked against a route table, rendered verbatim in the inbox.
     Capture it when the report flow *opens*: read at submit time, a pushed report route
     would record the report form itself, every time.
+  - `context.os` / `context.browser` / `context.deviceModel` (v1.2): **optional, ≤200 chars
+    each** — what the reporter was running, captured on their device at report time.
+    Same rule as `screen` in every respect: opaque, stored and rendered verbatim, **never
+    format- or vocabulary-validated** (worklog parses no user-agent and keeps no list of
+    browsers or OSes). Semantics for the Largata build: `os` = OS name **and** version as
+    Largata formats it ("Windows 11", "Android 14", "iOS 17.5") — one field, not a
+    name/version split, because for web reporters the *name* is the payload; `browser` =
+    name + version ("Chrome 128"), expected only when `platform` is `web`, but a native
+    build sending one is **stored as sent, never a `400`**; `deviceModel` = whatever the
+    platform API gives ("Samsung SM-S918B", "iPhone15,3"). All three are optional forever —
+    pre-v1.2 builds keep landing — and **nothing back-fills**: reports filed before
+    Largata's capture ships stay blank on these fields permanently.
   - parts `screenshot` (0–3 files): JPEG/PNG, ≤ 5 MB each (Largata sends its sanitized,
     downsized display variant — EXIF-stripped, ≤2048px).
 - **Auth:** header `X-Intake-Secret: <secret>` — a long random value in an env var on both
@@ -128,8 +142,9 @@ instant thank-you in Largata and never see worklog.
 - **Idempotency:** first accept of a `reportId` → `201` with the report; any replay of the
   same `reportId` → `200` with the already-stored report, no second row, no screenshot
   re-write. Validation failure → `400` with the field-level envelope; oversized/malformed
-  images → `400`. Envelope keys for context fields are dotted (v1.1): `context.platform`,
-  `context.appVersion`, `context.screen` — matching `reporter.name` / `reporter.uid`.
+  images → `400`. Envelope keys for context fields are dotted: `context.platform`,
+  `context.appVersion`, `context.screen` (v1.1), `context.os`, `context.browser`,
+  `context.deviceModel` (v1.2) — matching `reporter.name` / `reporter.uid`.
 - Delivery guarantees are Largata's job (store-and-forward with retry until a 2xx);
   worklog's job is only that replays are safe.
 
@@ -168,7 +183,10 @@ instant thank-you in Largata and never see worklog.
   Largata-brand styling.
 - Drill-in report detail (same slide pattern as the day drill-in): full description,
   screenshot viewer, metadata block, and the status control. Status changes are the only
-  write this surface has.
+  write this surface has. The metadata block carries one combined **Device** row (v1.2) —
+  `browser · os · deviceModel`, null parts omitted, the whole row omitted when all three
+  are null; the list card is deliberately unchanged (it already carries platform +
+  version and is dense).
 
 ## Testing Decisions
 
@@ -338,24 +356,26 @@ the real v1.2.) Recorded as **ADR-012**; story/ticket: Story 20 /
   modal, so before this a failed status change was invisible.
 - **Deferred, explicitly:** device context on reports — wanted for problem triage, but it
   moves the wire contract (**that** is the reserved v1.2) and needs a Largata-side
-  session. _Scoped later the same day (2026-08-29): see "Amendments → v1.2 (planned)"
-  below and
-  [Story 21's scoping ticket](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md),
-  now the record for it (its own directory, per the story-per-directory convention)._
+  session. _Scoped, built and shipped later the same day (2026-08-29): see
+  "Amendments → v1.2" below and [Story 21](../story-21-device-context/)._
 
-### v1.2 (planned) — Device context: os, browser, deviceModel (scoped 2026-08-29, NOT YET BUILT)
+### v1.2 — Device context: os, browser, deviceModel (2026-08-29, IMPLEMENTED)
 
-**The live contract is still v1.1.** This section records the next bump ahead of its
-build: field set and schema shape were signed off by the developer 2026-08-29 (the
+**Live as of 2026-08-29 — Largata may send these fields.** Field set and schema shape were
+signed off by the developer (the
 stop-rule ask), then the full design was grilled the same day — six decisions (os field
 shape · flat envelope · field-set completeness · validation stance · rendering ·
-glossary term), all settled and recorded here — with implementation deliberately
-deferred — spec + ticket only, no code or schema change yet. The contract sections above get edited in place to v1.2 only when
-worklog's half ships (Story 21 —
-[scoping ticket 01](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md)).
-**Largata must not send these fields until then:** today's deployment doesn't store them
-(unknown JSON properties are dropped on arrival — Jackson 3 default, unpinned by any
-test), so device context sent early is lost for good, silently.
+glossary term), all settled and recorded here. Implementation followed the same day
+(Story 21 — [scoping record 01](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md),
+[tracer bullet 02](../story-21-device-context/issues/02-device-context-tracer-bullet.md),
+[ship 03](../story-21-device-context/issues/03-ship-v1-2-freeze-deploy-handoff.md);
+ADR-013), and the contract sections above are now v1.2.
+
+**Largata may now send the three fields.** One caveat for that build: reports already in
+the inbox stay blank on them forever — nothing back-fills — and an older Largata build
+sending them against an *older* worklog deployment would have lost them silently (unknown
+JSON properties are dropped on arrival, Jackson 3's default). Both sides are past that
+point now.
 
 Trigger: problem triage wants "which browser, if a browser — which OS — or was it the
 native app". Native-vs-browser is already answerable via `platform` (`web` vs
@@ -380,7 +400,7 @@ bump.
   all three are null. The three facts are consumed together ("what were they running?"),
   and the Story 20 rework keeps the reporter's words dominant — three separate label
   rows would work against it. List row unchanged. The domain model gains **Device
-  context** as a sibling term of Screen context (landed at scoping, marked not-yet-built).
+  context** as a sibling term of Screen context.
 - **Rejected:** a raw `context.userAgent` (either the inbox renders an unreadable UA
   string verbatim or worklog starts parsing user-agents — ruled out at scoping);
   shipping only `browser` + `os` now (the developer's literal ask) with `deviceModel`
@@ -394,7 +414,7 @@ bump.
   fields triage will actually consult; forever-null columns are their own noise — a
   later bump with evidence behind it beats guessing now).
 
-Schema sketch: migration **V7** — three nullable `VARCHAR(200)` columns on `reports`,
+Schema: migration **V7** — three nullable `VARCHAR(200)` columns on `reports`,
 additive only. Statuses, screenshots, notes, idempotency, both auth schemes: untouched.
 Build checklist, field semantics for the Largata capture, and test additions live in
 **Story 21's own directory** (`../story-21-device-context/` — this spec stays here as the

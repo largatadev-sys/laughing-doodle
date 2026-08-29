@@ -36,8 +36,8 @@ product), never about worklog itself._
   browser (browser Reports only — native-app-vs-browser itself is already the platform
   fact), and device model, each an opaque Largata-minted string. Optional forever;
   worklog never parses a user-agent and never keeps a vocabulary of browsers or OSes.
-  _(Contract v1.2 — scoped 2026-08-29, **not yet built**; the live contract is v1.1.
-  Story 21: `docs/tickets/story-21-device-context/`.)_
+  _(Contract v1.2, 2026-08-29 — ADR-013; Story 21: `docs/tickets/story-21-device-context/`.
+  Nothing back-fills: Reports filed before Largata's capture shipped stay blank forever.)_
 - **Inbox** — the worklog surface where Reports land and get worked: a fifth tab (bug icon)
   in the pill. Unlike TimeEntries, a Report has **no owner**: every Member reads and updates
   any Report equally.
