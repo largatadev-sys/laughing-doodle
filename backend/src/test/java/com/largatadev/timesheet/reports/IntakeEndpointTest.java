@@ -435,6 +435,28 @@ class IntakeEndpointTest {
 	}
 
 	@Test
+	void exactly200CharDeviceContextFieldsAreAccepted() throws Exception {
+		// The cap is this contract's entire validation surface, so both sides of it are
+		// pinned: 201 chars is rejected above, 200 lands.
+		String atLimit = "z".repeat(200);
+		String json = """
+				{"reportId":"%s","type":"problem","description":"Device context at the cap.",
+				 "reporter":{"name":"Ada Traveler","uid":"largata-uid-1"},
+				 "context":{"platform":"web","appVersion":"1.4.2",
+				  "os":"%s","browser":"%s","deviceModel":"%s"},
+				 "submittedAt":"2026-08-12T09:15:30Z"}
+				""".formatted(UUID.randomUUID(), atLimit, atLimit, atLimit);
+
+		mockMvc.perform(multipart("/api/intake/reports")
+						.file(reportPart(json))
+						.header("X-Intake-Secret", TEST_INTAKE_SECRET))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.os").value(atLimit))
+				.andExpect(jsonPath("$.browser").value(atLimit))
+				.andExpect(jsonPath("$.deviceModel").value(atLimit));
+	}
+
+	@Test
 	void nativeReportSendingBrowserIsStoredAsSent() throws Exception {
 		// browser is expected only from web reports, but a native build sending one is a
 		// Largata bug, not the reporter's — and under store-and-forward a 400 here would

@@ -336,6 +336,12 @@ the real v1.2.) Recorded as **ADR-012**; story/ticket: Story 20 /
   press — the spinner that follows means "still saving", not "did that register?".
   A failed move also surfaces **in the sheet**: the screen's error line sits behind the
   modal, so before this a failed status change was invisible.
+- **Deferred, explicitly:** device context on reports — wanted for problem triage, but it
+  moves the wire contract (**that** is the reserved v1.2) and needs a Largata-side
+  session. _Scoped later the same day (2026-08-29): see "Amendments → v1.2 (planned)"
+  below and
+  [Story 21's scoping ticket](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md),
+  now the record for it (its own directory, per the story-per-directory convention)._
 
 ### v1.2 (planned) — Device context: os, browser, deviceModel (scoped 2026-08-29, NOT YET BUILT)
 
@@ -399,9 +405,3 @@ bullet, three fields end-to-end) →
 [03](../story-21-device-context/issues/03-ship-v1-2-freeze-deploy-handoff.md) (ship:
 contract freeze, deploy, Largata hand-off); the intake tests remain the contract tests
 and will pin all of the above when it builds.
-- **Deferred, explicitly:** device context on reports — wanted for problem triage, but it
-  moves the wire contract (**that** is the reserved v1.2) and needs a Largata-side
-  session. _Scoped later the same day (2026-08-29): see "Amendments → v1.2 (planned)"
-  below and
-  [Story 21's scoping ticket](../story-21-device-context/issues/01-intake-contract-v1-2-device-context.md),
-  now the record for it (its own directory, per the story-per-directory convention)._

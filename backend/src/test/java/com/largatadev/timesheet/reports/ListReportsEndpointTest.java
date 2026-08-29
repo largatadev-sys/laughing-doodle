@@ -20,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -122,6 +123,19 @@ class ListReportsEndpointTest {
 				.andExpect(jsonPath("$[0].os").value("Windows 11"))
 				.andExpect(jsonPath("$[0].browser").value("Chrome 128"))
 				.andExpect(jsonPath("$[0].deviceModel").value("Pixel 6"));
+	}
+
+	@Test
+	void preV12ReportsCarryExplicitNullsOnTheTeamList() throws Exception {
+		// The client omits the Device row on exactly this shape, so the nulls have to arrive
+		// as nulls rather than as absent keys.
+		save("Filed before v1.2", OffsetDateTime.now(ZoneOffset.UTC));
+
+		mockMvc.perform(get("/api/reports").header("Authorization", "Bearer " + memberToken()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].os").value(nullValue()))
+				.andExpect(jsonPath("$[0].browser").value(nullValue()))
+				.andExpect(jsonPath("$[0].deviceModel").value(nullValue()));
 	}
 
 	@Test

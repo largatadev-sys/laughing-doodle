@@ -33,7 +33,12 @@ live wire contract stays v1.1 and Largata must not send the fields.
       row omitted when all three are null; list row unchanged.
 - [x] Contract tests (the cross-repo pin): with all three · with none (pre-v1.2 shape
       lands and echoes nulls) · each field overlong → `400` with its dotted key · a
-      native report sending `browser` stored as sent.
+      native report sending `browser` stored as sent (pinned through the idempotent
+      replay, which reads the stored row rather than echoing the request). Code review
+      added both remaining edges: exactly 200 chars **accepted** (the cap is this
+      contract's whole validation surface, so both sides of it are pinned), and the
+      pre-v1.2 shape carrying explicit nulls on `GET /api/reports` (the client's Device-row
+      omission depends on nulls arriving as nulls).
 - [x] Live `bootRun` against the compose Postgres confirms V7 actually applied (standing
       silent-Flyway lesson — the test suite alone doesn't prove autoconfigured migration).
       Verified 2026-08-29: Flyway log "Migrating schema public to version 7 - device
