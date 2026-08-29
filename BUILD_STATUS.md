@@ -212,8 +212,8 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
   pass; **the developer's live check (browser login → Reports tab) on prod is the
   remaining verification** per the standing deploy rule. Real v1.1 traffic starts when
   the Largata-side relay ships (starting input: the amended spec).
-- **Story 20 — built 2026-08-29 on `feature/story-20-report-notes-inbox-clarity`, not yet
-  squashed into `dev`.** Team **Notes** on Reports (ADR-012, reversing the spec's original
+- **Story 20 — done (2026-08-29), squashed into `dev` at `9bc03ae`.** Team **Notes** on
+  Reports (ADR-012, reversing the spec's original
   "no comments"): the log is append-only — no delete route exists anywhere, and a test
   asserts that rather than assuming it — while each note's text is editable **by its
   author**, stamped `Edited · when` from the JWT. Migration **V6** (`report_notes`,
