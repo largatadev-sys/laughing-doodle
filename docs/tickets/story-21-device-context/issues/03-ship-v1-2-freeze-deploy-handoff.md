@@ -10,7 +10,10 @@ for good.
 
 **Blocked by:** [02 — Device context tracer bullet](02-device-context-tracer-bullet.md).
 
-**Status:** in progress — docs flipped 2026-08-29; deploy underway.
+**Status:** ready-for-human — docs flipped and deployed to both environments 2026-08-29
+(smoke ALL PASS everywhere; `dev` and `main` both at `714dc70`, all three URLs serving
+`entry-7bbdce74…`). Remaining: the developer's live check on the deploy, then the
+Largata-side hand-off.
 
 - [x] Docs flip to "implemented": spec wire-contract sections edited in place to v1.2 +
       the "planned" amendment marked implemented (and the header's "Planned" pointer
@@ -19,9 +22,14 @@ for good.
       pointer (Story 21 now sits with the other Epic 3 stories); BUILD_STATUS Story 21 row.
 - [x] Ticket 01's checklist reconciled — it stays the scoping record; this ticket and 02
       are its implementation slices.
-- [ ] Deploy in the standing sequence: local fullstack gate + smoke first, smoke the dev
+- [x] Deploy in the standing sequence: local fullstack gate + smoke first, smoke the dev
       environment, then promote `dev` → `main` and deploy prod; smoke ALL PASS on both
-      (CORS-behind-TLS-proxy check included).
+      (CORS-behind-TLS-proxy check included). Done 2026-08-29 — gate, dev,
+      `worklog.largata.com` and `largata-ts.up.railway.app` all ALL PASS; the new bundle
+      `entry-7bbdce74…` is served on every one of them, replacing `entry-0d7a504e…`.
+      V7 applying on the two managed databases is **inferred** (booting app + Flyway wired
+      + failed migrations are fatal), not directly observed — no environment credentials
+      here.
 - [ ] The developer's live check against the deploy (standing rule: automated checks
       alone are never "done") — open Reports on prod in a real browser; once a v1.2
       report exists, confirm its Device row renders.

@@ -323,6 +323,24 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
     screenshots, one signed-out, and a pre-v1.2 shape as the regression control. Those seed
     reports (`[seed …]`-prefixed, plus one called "probe") are permanent rows in the **local
     dev** database — Reports are undeletable by design; clear them with SQL whenever.
+  - **Promoted and deployed 2026-08-29.** `dev` at `714dc70`, promoted to `main`
+    (fast-forward, both at `714dc70`), deployed to **dev and prod**. All three URLs serve the
+    same new bundle `entry-7bbdce74…`, replacing Story 20's `entry-0d7a504e…` — so the build
+    really is live on both environments. `scripts/smoke.sh` **ALL PASS** on the local gate,
+    on dev, on `worklog.largata.com` and on the underlying `largata-ts.up.railway.app`,
+    CORS-behind-TLS-proxy check included. No new env vars; V7 is additive only (three
+    `ADD COLUMN`s, no `ALTER` of an existing column).
+  - **What is NOT directly observed: that V7 ran on the dev and prod databases.** Each
+    environment holds its own rotated credentials and its own `REPORTS_INTAKE_SECRET`, so no
+    authenticated probe could be run from here. The inference is the same shape as Story 20's
+    and is sound but *is* an inference: `spring-boot-flyway` is wired on these deployments
+    (V5 and V6 demonstrably ran on both) and a failed migration is fatal to startup, so a
+    booting app that answers `/api/health` — which does a live `SELECT 1` — implies V7
+    applied. **The confirming probe is the developer's login: open Reports on prod; once a
+    v1.2 report exists, its Device row renders.**
+  - **Automated checks pass; the developer's live check on the deploy is the remaining
+    verification**, per the standing rule — the LAN parity check above was the local build,
+    not this deploy.
   - **Two code-review rounds** (standards + spec axes, both run twice). Findings fixed: the
     "stored as sent" test asserted only the `201` echo (now replays); the accepted side of
     the 200-char cap was untested; the team list's pre-v1.2 nulls were implied, not
