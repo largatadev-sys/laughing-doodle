@@ -258,14 +258,31 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
     a tick fades in on press. That third fix also uncovered a live bug: **a failed status
     change was invisible**, because the screen's error line renders behind the modal that
     stays open on failure. The sheet now shows it.
-  - **The developer's live check is done (2026-08-29) — locally, not in prod.** The branch was
+  - **Promoted and deployed 2026-08-29.** `dev` squashed at `9bc03ae`, promoted to `main`
+    (fast-forward, both at `cc86c4a`), deployed to **dev and prod**. The served JS bundle on
+    both environments carries the Story 20 marker and is the *same* hash
+    (`entry-0d7a504e…`), replacing `entry-8bae4d92…` — so the new build really is live, on
+    both. `scripts/smoke.sh` **ALL PASS** on the local gate, on dev, on
+    `worklog.largata.com`, and on the underlying `largata-ts.up.railway.app` — including the
+    CORS-behind-TLS-proxy check, the Story 9 failure mode. No new env vars; V6 is additive
+    only (`CREATE TABLE` + `CREATE INDEX`, no `ALTER` of an existing table).
+  - **What is NOT directly observed: that V6 ran on the dev and prod databases.** The seeded
+    password is rotated on dev, so the authenticated probe (`GET /api/reports` returning
+    embedded `notes`) could not be run from here. The inference is sound but is an inference:
+    `spring-boot-flyway` is wired on these deployments (V5 demonstrably ran on both for Story
+    19) and a failed migration is fatal to startup, so a booting app implies V6 applied —
+    which is a materially stronger position than the original silent-Flyway trap, where the
+    autoconfiguration was absent and *nothing* ran. **The confirming probe is the developer's
+    login: open Reports on prod and add a note.**
+  - **The developer's live check is done for the LOCAL build (2026-08-29); the deploy still
+    needs one.** The branch was
     served over LAN as the single-origin parity image (`docker compose --profile fullstack`;
     `scripts/smoke.sh` 12/12 against the LAN address, CORS-behind-proxy check included) and
     driven in a real browser, against an inbox seeded with the shapes the checklist needs: a
     1479-char testimony, a signed-out report, reports with and without notes, and notes by
     three authors including an edited one. Tickets 10–13 are marked done on that basis.
-    **Still to do: squash into `dev`, then deploy and re-check on dev + prod** — the standing
-    rule is about the deploy, and this branch has not been deployed anywhere.
+    **Still to do: the developer's live check against the deploy** — the standing
+    rule is about the deploy, and automated checks alone are never "done".
   - Off-epic side-effect, ledgered below: unmapped HTTP methods on `/api/**` used to 500.
 
 ## Off-epic ledger
