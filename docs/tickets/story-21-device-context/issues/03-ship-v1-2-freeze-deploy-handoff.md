@@ -10,10 +10,10 @@ for good.
 
 **Blocked by:** [02 — Device context tracer bullet](02-device-context-tracer-bullet.md).
 
-**Status:** ready-for-human — docs flipped and deployed to both environments 2026-08-29
-(smoke ALL PASS everywhere; `dev` and `main` both at `714dc70`, all three URLs serving
-`entry-7bbdce74…`). Remaining: the developer's live check on the deploy, then the
-Largata-side hand-off.
+**Status:** done for worklog's half — docs flipped, deployed to both environments, and
+live-checked by the developer 2026-08-29 (smoke ALL PASS everywhere; `dev` and `main` both
+at `714dc70`, all three URLs serving `entry-7bbdce74…`). The only thing left is external:
+the Largata-side capture session.
 
 - [x] Docs flip to "implemented": spec wire-contract sections edited in place to v1.2 +
       the "planned" amendment marked implemented (and the header's "Planned" pointer
@@ -30,9 +30,12 @@ Largata-side hand-off.
       V7 applying on the two managed databases is **inferred** (booting app + Flyway wired
       + failed migrations are fatal), not directly observed — no environment credentials
       here.
-- [ ] The developer's live check against the deploy (standing rule: automated checks
-      alone are never "done") — open Reports on prod in a real browser; once a v1.2
-      report exists, confirm its Device row renders.
+- [x] The developer's live check against the deploy (standing rule: automated checks
+      alone are never "done") — done 2026-08-29: prod exercised in a real browser
+      (login, inbox, report detail, notes, status changes) and reported good, covering
+      the Stories 19/20 deploys whose live check was still outstanding as well as this
+      one. Existing prod reports render unchanged with no Device row — the regression
+      case, and the one that matters until Largata's capture ships.
 - [ ] Hand-off: the amended spec to the Largata-side session (capture os / browser /
       deviceModel on the reporter's device at report time — that repo's build reads the
       field-semantics item in ticket 01). Until it ships, every arriving report stays
@@ -40,4 +43,7 @@ Largata-side hand-off.
 
 Note at slicing time (2026-08-29): the Stories 19/20 prod live check was itself still
 outstanding — do it before stacking this deploy on top, so two deploys never sit
-unverified at once.
+unverified at once. _What actually happened: this deploy went out first at the developer's
+call, and one browser session then cleared all three stories at once. It worked, but the
+window where three unverified deploys sat on prod is the thing the note was trying to
+avoid._

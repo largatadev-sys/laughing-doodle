@@ -338,9 +338,14 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
     booting app that answers `/api/health` — which does a live `SELECT 1` — implies V7
     applied. **The confirming probe is the developer's login: open Reports on prod; once a
     v1.2 report exists, its Device row renders.**
-  - **Automated checks pass; the developer's live check on the deploy is the remaining
-    verification**, per the standing rule — the LAN parity check above was the local build,
-    not this deploy.
+  - **The developer's live check on the deploy passed (2026-08-29)** — prod exercised in a
+    real browser (login, inbox, report detail, notes, status changes) and reported good.
+    That one session also cleared the **Stories 19 and 20** prod live checks, which had been
+    outstanding since their deploys. Existing prod reports render unchanged with no Device
+    row, which is the regression case and the only device-context case prod can show until
+    Largata's capture ships. _Not separately recorded: whether a hand-sent v1.2 report was
+    posted to the prod inbox — the optional probe that would also have confirmed V7 on the
+    prod database directly rather than by inference._
   - **Two code-review rounds** (standards + spec axes, both run twice). Findings fixed: the
     "stored as sent" test asserted only the `201` echo (now replays); the accepted side of
     the 200-char cap was untested; the team list's pre-v1.2 nulls were implied, not
