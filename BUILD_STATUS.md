@@ -376,7 +376,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 24  | Summary read: active today, totals, freshness                 | ✅ (dev) | [03](docs/tickets/largata-dashboard/issues/03-summary-read.md) · `2d9eb41` |
 | 25  | Reports tab strip + Dashboard screen                          | ✅ (dev) | [04](docs/tickets/largata-dashboard/issues/04-reports-strip-and-dashboard-screen.md) · `2d9eb41` |
 | 26  | Series: counts per day / month / year (+ design v2 screen)    | ✅ (dev) | [05](docs/tickets/largata-dashboard/issues/05-series-day-month-year.md) · `2d9eb41` |
-| 27  | Ship: smoke probe, env note, tracker rows, deploy, live check | 🔄 shipped, awaiting live check | [06](docs/tickets/largata-dashboard/issues/06-ship-smoke-env-deploy.md) |
+| 27  | Ship: smoke probe, env note, tracker rows, deploy, live check | ✅ (dev + main) | [06](docs/tickets/largata-dashboard/issues/06-ship-smoke-env-deploy.md) |
 
 **State 2026-09-24:** Stories 22–26 built on `feature/largata-dashboard-planning` (squashed onto `dev` 2026-10-05 as `2d9eb41`; the branch SHAs
 no longer apply). Backend contract tests at the
@@ -422,9 +422,11 @@ live check on dev and prod).
   check included) and on `largata-ts.up.railway.app`. Before the push, a read-only probe
   (validated against a local placeholder-secret control) showed both environments refuse the
   repo's placeholder JWT and intake secrets; both then booted with the new secrets guard.
-  **What is NOT directly observed: that V8 ran on the dev and prod databases** — only the
-  Dashboard rendering after a real login proves it (the standing silent-Flyway lesson).
-  Automated checks pass; **needs the developer's live check** on dev and prod.
+  **The developer live-checked dev and prod the same day** (real browser login → Reports →
+  strip → Activity screen; "everything seems working"). The Dashboard rendering its empty state
+  is the proof that V8 ran on both databases (the standing silent-Flyway lesson) — no real
+  Events yet. **Epic 4 is done on worklog's side**; real data starts when Largata's sender ships
+  against [the hand-off](docs/tickets/largata-dashboard/largata-handoff-prompt.md).
 - **Follow-up (after this branch merges, off-epic):** share one Postgres container and test
   configuration across the backend test classes so Spring reuses one context — the full suite
   boots 26 contexts today (~10 min). Test-infrastructure only; no behaviour change.

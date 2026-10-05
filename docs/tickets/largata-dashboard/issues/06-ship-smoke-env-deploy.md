@@ -7,7 +7,7 @@ deploy ritual, and the Largata session can point its sender at a real receiver.
 
 **Blocked by:** 05 (series).
 
-**Status:** in progress — shipped 2026-10-05 (`dev` and `main` at `76c5ba0`, smoke green on both); awaiting the developer's live check on dev and prod
+**Status:** done — shipped 2026-10-05 (`dev` and `main` at `76c5ba0`, smoke green on both); the developer live-checked dev and prod the same day.
 
 - [x] `scripts/smoke.sh` gains one probe: `POST /api/intake/events` without the secret →
       `401` (proves the route is wired), run against the local gate, dev and prod.
@@ -17,7 +17,7 @@ deploy ritual, and the Largata session can point its sender at a real receiver.
       and the glossary are amended, dated, only if the build changed a decision.
 - [x] Squash into `dev`; smoke `dev`; promote to `main` (fast-forward); smoke prod including
       the CORS-behind-TLS-proxy check.
-- [ ] The developer's live check on dev **and** prod: real browser login → Reports → strip
+- [x] The developer's live check on dev **and** prod: real browser login → Reports → strip
       → Dashboard renders — the only probe that proves the migration ran on that database;
       one ticket-02 script batch against dev shows verdicts and the strip updates.
 - [x] Reported as "automated checks pass; needs your live check" until the developer

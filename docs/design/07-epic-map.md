@@ -316,21 +316,21 @@ vocabulary in [02](02-domain-model.md) ("Largata usage (Events & the Dashboard)"
 [docs/tickets/largata-dashboard/issues/](../tickets/largata-dashboard/issues/), blockers first
 (approved 2026-09-24):
 
-- **Story 22** ✅ built — Prefactor: the Inbox's focused polling becomes a shared hook, no behaviour
+- **Story 22** ✅ shipped — Prefactor: the Inbox's focused polling becomes a shared hook, no behaviour
   change ([ticket 01](../tickets/largata-dashboard/issues/01-focused-polling-hook.md))
-- **Story 23** ✅ built — Events land: intake route, table, per-Event verdicts, sample-batch script
+- **Story 23** ✅ shipped — Events land: intake route, table, per-Event verdicts, sample-batch script
   ([ticket 02](../tickets/largata-dashboard/issues/02-events-land-intake.md))
-- **Story 24** ✅ built — Summary read: active today, totals re-based on the latest Snapshot,
+- **Story 24** ✅ shipped — Summary read: active today, totals re-based on the latest Snapshot,
   freshness / silent ([ticket 03](../tickets/largata-dashboard/issues/03-summary-read.md))
-- **Story 25** ✅ built — Reports tab strip + Dashboard screen, 30 s focused polling, device zone
+- **Story 25** ✅ shipped — Reports tab strip + Dashboard screen, 30 s focused polling, device zone
   ([ticket 04](../tickets/largata-dashboard/issues/04-reports-strip-and-dashboard-screen.md))
-- **Story 26** ✅ built — Series: counts per day / month / year in the viewer's zone, picker + bars
+- **Story 26** ✅ shipped — Series: counts per day / month / year in the viewer's zone, picker + bars
   ([ticket 05](../tickets/largata-dashboard/issues/05-series-day-month-year.md))
-- **Story 27** 🔄 — Ship: smoke probe, env note, tracker rows, deploy, developer live check
+- **Story 27** ✅ shipped — Ship: smoke probe, env note, tracker rows, deploy, developer live check
   ([ticket 06](../tickets/largata-dashboard/issues/06-ship-smoke-env-deploy.md))
 
-Built 2026-09-24 on `feature/largata-dashboard-planning`; the commit that lands them is the
-squash onto `dev`, recorded in BUILD_STATUS once it exists (the branch SHAs do not survive the
+Built 2026-09-24 on `feature/largata-dashboard-planning`; landed on `dev` as squash `2d9eb41` and
+shipped to dev and prod 2026-10-05 at `76c5ba0`, live-checked by the developer (the branch SHAs do not survive the
 squash). Story 26 also carries design v2 (the "Activity" screen) and `GET /api/dashboard/active`
 — see the spec's Amendments.
 
