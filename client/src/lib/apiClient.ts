@@ -1,10 +1,14 @@
 import type {
+  ActiveSeries,
   CreateEntryRequest,
+  DashboardSeries,
+  DashboardSummary,
   EntryResponse,
   LoginResponse,
   ReportNote,
   ReportResponse,
   ReportStatus,
+  SeriesBucket,
   UpdateEntryRequest,
   UserSummary,
 } from './types';
@@ -177,5 +181,39 @@ export const apiClient = {
       body: { body },
       token,
     });
+  },
+
+  // Largata usage Dashboard. `zone` is the device's IANA zone: "today" is the viewer's day,
+  // and the server never guesses one.
+  dashboardSummary(zone: string, token: string): Promise<DashboardSummary> {
+    return request<DashboardSummary>(
+      `/api/dashboard/summary?zone=${encodeURIComponent(zone)}`,
+      { token },
+    );
+  },
+
+  // `from` is a calendar day in `zone` (YYYY-MM-DD); omitted, the server picks the bucket's
+  // default range.
+  dashboardSeries(
+    counter: string,
+    bucket: SeriesBucket,
+    zone: string,
+    token: string,
+    from?: string,
+  ): Promise<DashboardSeries> {
+    const query = new URLSearchParams({ counter, bucket, zone });
+    if (from) query.set('from', from);
+    return request<DashboardSeries>(`/api/dashboard/series?${query.toString()}`, { token });
+  },
+
+  dashboardActive(
+    bucket: SeriesBucket,
+    zone: string,
+    token: string,
+    from?: string,
+  ): Promise<ActiveSeries> {
+    const query = new URLSearchParams({ bucket, zone });
+    if (from) query.set('from', from);
+    return request<ActiveSeries>(`/api/dashboard/active?${query.toString()}`, { token });
   },
 };

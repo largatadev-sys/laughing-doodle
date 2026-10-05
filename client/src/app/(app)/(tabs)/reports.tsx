@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { router, useFocusEffect } from 'expo-router';
-import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppHeader } from '@/components/AppHeader';
 import {
@@ -8,13 +8,17 @@ import {
   ReportListError,
   ReportListSkeleton,
 } from '@/components/ReportListStates';
+import { LargataStrip } from '@/components/dashboard/LargataStrip';
 import { ReportRow } from '@/components/ReportRow';
 import { StatusSheet } from '@/components/StatusSheet';
 import { Card, Eyebrow, FadeInView, Scroll } from '@/components/ui';
 import { noTextSelect, type PressState } from '@/components/ui/press';
+import { DASHBOARD_POLL_MS, useDashboard } from '@/lib/dashboard';
 import { useReports } from '@/lib/reports';
+import { useNow } from '@/lib/useNow';
 import { OPEN_STATUSES, STATUS_LABELS } from '@/lib/reportStatus';
 import type { ReportResponse, ReportStatus } from '@/lib/types';
+import { useFocusedPolling } from '@/lib/useFocusedPolling';
 import { colors, fonts, radius, space, TAB_BAR_CLEARANCE, type } from '@/theme';
 
 // The top-level split: what's still live, versus the two archives. Everything open shares one
@@ -52,39 +56,21 @@ export default function ReportsInbox() {
   // reports it started with. Neither refetch clears the badge: the count follows the data,
   // not the visit.
   //
-  // The timer exists only while this tab is focused AND the app is in the foreground: no
-  // polling from a backgrounded app, and none at all from any other screen. Ticks are quiet —
-  // a failed poll leaves the list exactly as it was, with no banner, because a network blip
-  // must not interrupt someone mid-triage. (This only shortens the *display* wait; the
-  // upstream delivery lag is a separate problem, tracked on its own.)
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-
-      let timer: ReturnType<typeof setInterval> | null = null;
-      const start = () => {
-        if (timer === null) timer = setInterval(refreshQuietly, POLL_INTERVAL_MS);
-      };
-      const stop = () => {
-        if (timer !== null) {
-          clearInterval(timer);
-          timer = null;
-        }
-      };
-
-      if (AppState.currentState === 'active') start();
-      // Coming back to the foreground refetches through the provider already; this only
-      // restarts the clock.
-      const sub = AppState.addEventListener('change', (state) =>
-        state === 'active' ? start() : stop(),
-      );
-
-      return () => {
-        stop();
-        sub.remove();
-      };
-    }, [refresh, refreshQuietly]),
+  // The timer exists only while this tab is focused AND the app is in the foreground, and
+  // ticks are quiet — both rules live in the shared hook. Coming back to the foreground
+  // refetches through the provider already, so the hook only restarts the clock. (This only
+  // shortens the *display* wait; the upstream delivery lag is a separate problem.)
+  const loadInbox = useCallback(
+    ({ quiet }: { quiet: boolean }) => (quiet ? refreshQuietly() : refresh()),
+    [refresh, refreshQuietly],
   );
+  useFocusedPolling(loadInbox, POLL_INTERVAL_MS);
+
+  // The Largata strip has its own, faster clock: it is a pulse, not a to-do list. Its provider
+  // does not refetch on foreground by itself, so the hook does it here.
+  const dashboard = useDashboard();
+  useFocusedPolling(dashboard.load, DASHBOARD_POLL_MS, { refetchOnForeground: true });
+  const now = useNow(DASHBOARD_POLL_MS, dashboard.summary?.asOf);
 
   const openReports = useMemo(
     () => (reports ?? []).filter((r) => OPEN_STATUSES.includes(r.status)),
@@ -140,6 +126,16 @@ export default function ReportsInbox() {
             <Text style={styles.title}>Inbox</Text>
             <Text style={styles.openCount}>{openReports.length} open</Text>
           </View>
+        </FadeInView>
+
+        {/* Usage sits above the chips and outside the list: Events are never Inbox items. */}
+        <FadeInView delay={30}>
+          <LargataStrip
+            summary={dashboard.summary}
+            failed={dashboard.error !== null}
+            now={now}
+            onPress={() => router.push('/dashboard')}
+          />
         </FadeInView>
 
         <FadeInView delay={50}>

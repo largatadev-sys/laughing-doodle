@@ -301,6 +301,43 @@ Unscheduled Epic 3 candidates:
 persisted `receivedAt − submittedAt` deltas before spending money (Railway always-on) or
 another repo's time (Largata retry backoff).
 
+## Epic 4: **Largata usage Dashboard** (Largata usage → worklog, live)
+
+Signal 2026-09-23: the team sees what Largata's users *complain about* (Epic 3) but not
+what they *do*, and Largata's backend already emits the analytics events nobody reads.
+Largata pushes usage **Events** and an hourly **Snapshot** through the existing intake flow
+(ADR-014); worklog keeps an append-only, opaque-kind log and counts it into a live
+**Dashboard** off the Reports tab. Generic receiver: Largata decides which kinds exist;
+worklog validates the envelope, never the vocabulary. **Worklog's half only.**
+
+Design closed 2026-09-24: spec
+[docs/tickets/largata-dashboard/spec.md](../tickets/largata-dashboard/spec.md) · ADR-014 ·
+vocabulary in [02](02-domain-model.md) ("Largata usage (Events & the Dashboard)"). Stories = the six tracer-bullet tickets in
+[docs/tickets/largata-dashboard/issues/](../tickets/largata-dashboard/issues/), blockers first
+(approved 2026-09-24):
+
+- **Story 22** ✅ built — Prefactor: the Inbox's focused polling becomes a shared hook, no behaviour
+  change ([ticket 01](../tickets/largata-dashboard/issues/01-focused-polling-hook.md))
+- **Story 23** ✅ built — Events land: intake route, table, per-Event verdicts, sample-batch script
+  ([ticket 02](../tickets/largata-dashboard/issues/02-events-land-intake.md))
+- **Story 24** ✅ built — Summary read: active today, totals re-based on the latest Snapshot,
+  freshness / silent ([ticket 03](../tickets/largata-dashboard/issues/03-summary-read.md))
+- **Story 25** ✅ built — Reports tab strip + Dashboard screen, 30 s focused polling, device zone
+  ([ticket 04](../tickets/largata-dashboard/issues/04-reports-strip-and-dashboard-screen.md))
+- **Story 26** ✅ built — Series: counts per day / month / year in the viewer's zone, picker + bars
+  ([ticket 05](../tickets/largata-dashboard/issues/05-series-day-month-year.md))
+- **Story 27** 🔄 — Ship: smoke probe, env note, tracker rows, deploy, developer live check
+  ([ticket 06](../tickets/largata-dashboard/issues/06-ship-smoke-env-deploy.md))
+
+Built 2026-09-24 on `feature/largata-dashboard-planning`; the commit that lands them is the
+squash onto `dev`, recorded in BUILD_STATUS once it exists (the branch SHAs do not survive the
+squash). Story 26 also carries design v2 (the "Activity" screen) and `GET /api/dashboard/active`
+— see the spec's Amendments.
+
+Status of record: [BUILD_STATUS](../../BUILD_STATUS.md). The sender side is the Largata
+repo's work, started from the spec plus
+[largata-handoff-prompt.md](../tickets/largata-dashboard/largata-handoff-prompt.md).
+
 ## Backlog epics (placeholders — post-validation, signal-driven)
 
 - **Projects** — optional `project_id` on entries + admin project management (additive; ADR-007).

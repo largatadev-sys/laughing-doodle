@@ -353,6 +353,72 @@ and **squashed into `dev` at `76f1e24`**. Not yet promoted to `main`. Backend su
     squash as V7 — corrected in place, since a future reader running `git show de36d94`
     would otherwise have been told the opposite of what the commit contains.
 
+## Story table — Epic 4: _Largata usage Dashboard (Largata usage → worklog, live)_
+
+Largata's backend pushes usage **Events** (an opaque kind, optionally the Traveler who did
+it, when) plus an hourly **Snapshot** of its own totals through the existing intake flow;
+worklog keeps them as one append-only log and renders a live **Dashboard** — Travelers
+active today, a running total per kind, counts per day / month / year — reached from a
+strip on the Reports tab. **Design closed 2026-09-24**: `/grill-with-docs` (every
+recommendation accepted), ADR-014, glossary block "Largata usage (Events & the
+Dashboard)", spec [docs/tickets/largata-dashboard/spec.md](docs/tickets/largata-dashboard/spec.md),
+C4 model <https://claude.ai/artifact/4MCwpb9araF152bsJfLi5F>. Worklog's half only —
+**Largata decides what it sends; worklog validates the envelope, never the vocabulary.**
+**New schema + a second route on the shared-secret intake surface — both stop-rules signed
+off by the developer 2026-09-24 (the grilling acceptance).**
+
+Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
+
+| #   | Story (= ticket)                                             | Status | Ticket |
+| --- | ------------------------------------------------------------ | ------ | ------ |
+| 22  | Prefactor: the Inbox's focused polling becomes a shared hook   | ✅ (branch) | [01](docs/tickets/largata-dashboard/issues/01-focused-polling-hook.md) · `f71c025` |
+| 23  | Events land: intake route, table, per-Event verdicts          | ✅ (branch) | [02](docs/tickets/largata-dashboard/issues/02-events-land-intake.md) · `0dd3988` |
+| 24  | Summary read: active today, totals, freshness                 | ✅ (branch) | [03](docs/tickets/largata-dashboard/issues/03-summary-read.md) · `d7fa26c` |
+| 25  | Reports tab strip + Dashboard screen                          | ✅ (branch) | [04](docs/tickets/largata-dashboard/issues/04-reports-strip-and-dashboard-screen.md) · `b921f4f` |
+| 26  | Series: counts per day / month / year (+ design v2 screen)    | ✅ (branch) | [05](docs/tickets/largata-dashboard/issues/05-series-day-month-year.md) · `7320921` `ac45077` `e8d2132` |
+| 27  | Ship: smoke probe, env note, tracker rows, deploy, live check | 🔄     | [06](docs/tickets/largata-dashboard/issues/06-ship-smoke-env-deploy.md) |
+
+**State 2026-09-24:** Stories 22–26 built on `feature/largata-dashboard-planning` (SHAs above
+are branch commits; they become one squash commit on `dev`). Backend contract tests at the
+API seam: intake 18, summary 15, series 12, active 8. Verified live locally: `bootRun`
+against the compose Postgres applied V8; `scripts/send-sample-events.sh` → verdicts, replay →
+all `duplicate`; the summary matched hand-computed numbers; a headless-browser drive of
+login → Reports → strip → Dashboard v2 (hero, tiles, buckets, bar tap), the silent state and
+a failed poll keeping its numbers. **Design v2** (developer's handoff,
+[design-v2/README.md](docs/tickets/largata-dashboard/design-v2/README.md)) replaced the
+screen layout and added `GET /api/dashboard/active`; the spec's "Amendments" section lists
+every departure (incl. `totals` as JSON, not JSONB). Story 27: smoke probes and the
+`.env.example` line done; **not yet** squashed to `dev`, deployed, or live-checked by the
+developer. **Real Events start when Largata's sender ships** — that session starts from the
+spec plus [largata-handoff-prompt.md](docs/tickets/largata-dashboard/largata-handoff-prompt.md).
+
+**State 2026-10-05:** the developer live-checked Dashboard v2 on the LAN gate ("good with
+screens and functions"). A second code review (repo standards + the developer's Java/Spring
+checklist, six dimensions, each adversarially verified; no blockers) and a check of the
+hand-off against the built receiver led to: the `occurredAt` window and control-character
+rejections (append-only log made both permanent harms), one consistent summary read, query
+dates bounded, intake logging, and tests for every amended wire rule. **Structure convention
+adopted** (CLAUDE.md): `dashboard` split into role sub-packages with an ArchUnit guard; client
+views moved to `components/dashboard/`. The hand-off is now **contract-only** — the developer
+builds the Largata sender themselves. Tickets 01–05 marked done; 06 open (squash, deploy,
+live check on dev and prod).
+
+**Developer's decisions on the review's open points (2026-10-05):**
+- **Deployed secrets guard — approved (auth stop rule).** A deployed worklog refuses to start if
+  `JWT_SECRET` or `REPORTS_INTAKE_SECRET` is unset, blank or the repo placeholder (detects
+  Railway by its `RAILWAY_*` variables; local and the gate unaffected). Verified by unit test and
+  by a `bootRun` posing as Railway, which refused to start naming `JWT_SECRET`. **Deploy
+  precondition:** confirm both variables are set on Railway dev and prod before Story 27 ships —
+  if either is missing there, that environment won't start (which is the point).
+- **UTC calendar.** "The team bases its times on UTC": the Dashboard sends `zone=UTC`, so today
+  and every bucket are UTC days for every Member; times of day stay local. Supersedes the
+  per-viewer zone (spec Amendments).
+- **Client helpers untested by choice** — recorded in 06b.
+- **ADR-014 read-side invalidator** — summary p95 > 300 ms or `largata_events` > 1M rows → rollups.
+- **Follow-up (after this branch merges, off-epic):** share one Postgres container and test
+  configuration across the backend test classes so Spring reuses one context — the full suite
+  boots 26 contexts today (~10 min). Test-infrastructure only; no behaviour change.
+
 ## Off-epic ledger
 
 _(Unplanned changes — a line each so small adjustments don't vanish. Starts empty.)_
@@ -371,3 +437,4 @@ _(Unplanned changes — a line each so small adjustments don't vanish. Starts em
 | 2026-08-28 | **Skills package re-synced to upstream.** The installed `mattpocock/skills` set (`.agents/skills/` + `.claude/skills/`, mirrored 1:1 — verified identical diffs) refreshed to current upstream: a prose/wording revision pass across 77 files (em-dash → colon/comma style, small clarifications, e.g. `handoff`'s "suggested skills" now names the Skill tool), plus the matching `computedHash` bumps in `skills-lock.json`. No skill added or removed; no local skill content authored. | Tooling refresh, not scope. The local skill-sync rewrote the files on session start, so every fresh checkout showed 77 modified files until the synced state was committed; committing re-pins the lock hashes to the tracked content. |
 | 2026-08-29 | **Intake contract v1.2 (device context) scoped — a docs-only *session*; the live wire contract stays v1.1 until Story 21 ships.** ⚠ The build followed later the same day and was squashed together with these records at `de36d94`, so this line's "docs only" describes the scoping session, **not** that commit — which does carry V7 and the code. Grilled and signed off in-session: `context.os` / `context.browser` / `context.deviceModel` as optional opaque ≤200-char strings exactly like `screen` (one `os` field carrying name+version — for web reporters the OS *name* is the payload; flat envelope, dotted keys; `screen`'s validation rule verbatim, store-as-sent for odd combos; one combined Device row in the detail screen; field set deliberately capped at three — `locale`/viewport/`timeZone` rejected as speculative). Spec gains "Amendments → v1.2 (planned)" + a header pointer warning that Largata must not send early (today's deployment silently drops unknown JSON — values sent early are lost for good); **Device context** added to the domain model (02) marked not-yet-built; the records live as **Story 21** in their own directory per the story-per-directory convention (clarified the same day in docs/agents/issue-tracker.md; the spec stays in `reports-inbox/` as the single hand-off artifact): [ticket 01](docs/tickets/story-21-device-context/issues/01-intake-contract-v1-2-device-context.md) is the scoping record (migration V7 sketch: three nullable columns, additive only), sliced for pickup into [ticket 02](docs/tickets/story-21-device-context/issues/02-device-context-tracer-bullet.md) (tracer bullet — implemented later the same day) → [ticket 03](docs/tickets/story-21-device-context/issues/03-ship-v1-2-freeze-deploy-handoff.md) (ship + Largata hand-off). **Superseded the same day:** both slices ran, the contract went live as **v1.2** (ADR-013), and the story table above carries Story 21 as ✅ — so everything below about "planned", "not yet built" and "stays v1.1" is the state at scoping time only. | Scoping output, not a built story — implementation deliberately deferred by the developer (spec + ticket only). Recorded so the reserved v1.2 has a pickup-ready record. The visible payoff needs a Largata-side capture session after worklog's half ships (intake is server-to-server — nothing can be sniffed or back-filled; every report before then stays blank on these fields forever). |
 | 2026-08-29 | **`GlobalExceptionHandler` now maps `HttpRequestMethodNotSupportedException` to a clean `404` envelope.** Any unmapped HTTP method on an `/api/**` path previously fell to the catch-all handler: a `500` plus an `ERROR` log line, for what is really "there is no such route". Reported as `404 NOT_FOUND` rather than `405` deliberately — the error vocabulary stays the five codes 05-api-conventions documents, and for this API an unmapped method *is* an absent resource. | Surfaced by Story 20's "no DELETE route exists" test, which asserts the append-only guarantee at the routing table: `DELETE /api/reports/{id}/notes/{noteId}` returned `500`. One handler, no new error code, no conventions change — too small for a story, but it changes the response of every wrong-method call in the API, so it is recorded rather than folded silently into the story. |
+| 2026-09-24 | **`frontend-design` skill re-synced.** The installed `frontend-design` skill (`.agents/skills/` + `.claude/skills/`, mirrored) picked up an upstream wording revision, with the matching `computedHash` bump in `skills-lock.json`; carried on `feature/largata-dashboard-planning` at the developer's request ("include the skills on this branch"). No skill added or removed. | Tooling refresh, not scope — same shape as the 2026-08-28 re-sync. |

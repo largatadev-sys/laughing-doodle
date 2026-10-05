@@ -119,6 +119,12 @@ into the worktree; remove the worktree once its branch merges into `dev`.
 ## Conventions quick-ref
 
 - Layered Spring: controller (HTTP+validation) → service (logic + INV-2) → repository (persistence).
+- **Package by feature, then by role** (developer's call, 2026-10-05): a feature module's classes
+  sit in role sub-packages — `controller/`, `dto/`, `service/`, `repository/`, `domain/`
+  (+ `config/` when needed). `dashboard/` is the reference; **new modules follow it**. Older
+  flat modules (`auth`, `entries`, `reports`, `users`) stay flat until someone migrates them
+  deliberately. Sub-packages force internals public, so each split module gets an ArchUnit
+  test pinning who may touch its `repository/` and `domain/` (see `DashboardArchitectureTest`).
 - Identity always from the JWT security context, **never** the request body.
 - Every endpoint obeys [05](docs/design/05-api-conventions.md) (status codes + error envelope).
 - Never log-and-throw; never log secrets/PII (P2/P3).

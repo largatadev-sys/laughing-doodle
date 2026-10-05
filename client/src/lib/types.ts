@@ -99,3 +99,46 @@ export interface ErrorEnvelope {
     details?: Record<string, unknown>;
   };
 }
+
+// ---- Largata usage Dashboard (Epic 4) -------------------------------------------------------
+
+/** One running total. `baseline` is the ISO instant of the Snapshot the value re-bases on, or
+ *  "none" when no Snapshot has ever carried this counter (the value counts since events began). */
+export interface CounterTotal {
+  counter: string;
+  value: number;
+  baseline: string;
+}
+
+/** The Dashboard's headline numbers. Every instant is UTC; the client renders it locally. */
+export interface DashboardSummary {
+  asOf: string;
+  zone: string;
+  lastEventAt: string | null;
+  lastSnapshotAt: string | null;
+  /** No Snapshot yet, or the latest is more than two hours old — Largata has gone quiet. */
+  silent: boolean;
+  silentSince: string | null;
+  activeToday: number;
+  totals: CounterTotal[];
+}
+
+export type SeriesBucket = 'day' | 'month' | 'year';
+
+/** Created and deleted per bucket of the requested zone's calendar (the Dashboard asks for UTC), oldest first, zeros included.
+ *  `start` is `2026-09-24`, `2026-09` or `2026` by bucket. Empty `points` means the counter
+ *  has never had a created or deleted Event. */
+export interface DashboardSeries {
+  counter: string;
+  bucket: SeriesBucket;
+  zone: string;
+  points: { start: string; created: number; deleted: number }[];
+}
+
+/** Distinct Travelers active per bucket of the requested zone's calendar (the Dashboard asks for UTC) — "active today" for every
+ *  bucket. Empty `points` means no Event has ever named a Traveler. */
+export interface ActiveSeries {
+  bucket: SeriesBucket;
+  zone: string;
+  points: { start: string; active: number }[];
+}

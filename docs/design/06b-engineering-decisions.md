@@ -60,3 +60,11 @@ tested once, at the layer that owns it, never duplicated across layers. Choice f
 concentrated at the **API integration layer, focused on the authorization invariants**,
 thin on units, and absent at the UI. This is a choice made because the security boundary
 is the thing most costly to get wrong and the UI is the thing most likely to change.
+
+**Client pure helpers are untested by choice** (developer's call, 2026-10-05, from the Epic 4
+code review). The client has no test runner; its only real logic is display formatting
+(e.g. the Dashboard's `counterLabel` pluralisation, `bucketLabel`, chart wording in
+`lib/dashboardFormat.ts`). Adding `jest-expo` for ~30 lines of string formatting costs more
+than it protects; typecheck, lint and the developer's live check cover it. **Revisit** when the
+client gains logic whose failure the live check wouldn't show (date math, state machines,
+anything money- or permission-shaped).

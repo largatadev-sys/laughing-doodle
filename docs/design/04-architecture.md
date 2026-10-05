@@ -303,5 +303,56 @@ on-demand full-stack parity gate. The fast native daily loop this ADR protects i
   normalized vocabulary, which is exactly what this ADR declines to own; revisit toward
   parsing at the Largata edge into agreed enums, never toward parsing here.
 
+**ADR-014 — Largata usage events: pushed through the intake flow, stored as an opaque log, counted here.**
+- *Context.* 2026-09-23/24, grilling closed 2026-09-24 (`/grill-with-docs`; terms in
+  [02](02-domain-model.md)). The team wants a **live view of Largata usage** inside worklog —
+  travelers active today, running totals and per-day/month/year counts of the things
+  travelers make — beside the Reports inbox they already watch. Largata's Spring backend
+  already emits named analytics events (`postcard_created`, `trip_destroyed`,
+  `traveler_signed_up`, …) into a logging sink, and already runs a store-and-forward outbox
+  into worklog's intake route (ADR-010). Worklog is otherwise closed to the outside.
+- *Decision.* Largata **pushes** events — one row per thing that happened: an opaque `type`
+  string, an optional opaque `subject`, a UTC `occurredAt` — through the **same intake filter
+  chain and shared secret as Reports**, on a second, batched route. Worklog **stores them as
+  an append-only log** and computes every dashboard figure by counting that log. An hourly
+  **snapshot** event carrying Largata's own totals re-baselines the counts (drift from a
+  missed event lasts at most an hour) and doubles as the liveness signal (two missed
+  snapshots = "Largata silent since"). Worklog validates the **envelope, never the
+  vocabulary**: which kinds exist and what they mean is decided at the Largata edge, at send
+  time — the same posture ADR-011/013 take for `screen` and device context. The Reports
+  route, table and inbox are untouched; **an event never becomes a Report** — it has no
+  status, no notes, and nothing for a Member to do.
+- *Alternatives rejected.* (1) **Pull** — worklog calling a Largata metrics endpoint: worklog
+  would hold a Largata credential, and its read path would depend on Largata being up; the
+  Inbox deliberately depends on nothing external, and "live" then needs a poller on the
+  worklog side that Railway's app-sleeping stops. (2) **A shared database** between the two
+  apps (the developer's first instinct): the shared-schema integration anti-pattern — no
+  contract at the boundary, a third system to run, back up and pay for, two credentials, and
+  Largata's own outbox already *is* the durable buffer a shared store would provide.
+  (3) **Worklog reading Firebase/Firestore** — excluded by the Epic 3 spec and by ADR-010's
+  reasoning, and moot besides: Largata's data lives in its own Postgres. (4) **Periodic
+  snapshots only** — no event stream to maintain, but no per-period counts either, and
+  "live" degrades to the push cadence; a per-minute snapshot is also a keep-alive ping in
+  disguise (the always-on spend ticket 09 refused to hide). (5) **Raw events with worklog
+  modelling Largata's domain** — a traveler table, trip rows, joins: exactly the coupling
+  ADR-010/011 exist to prevent. The opaque `type` + `subject` log is the line: worklog
+  counts, it never knows what a trip *is*.
+- *Assumption.* Volume stays at a small product's scale (thousands of rows a day at most), so
+  a synchronous insert per batch and count-on-read over one table are enough. Four founders
+  looking at their own product's users need no anonymisation beyond what Reports already
+  carry — the subject is the same opaque Largata identity `reporter_uid` holds.
+- *Invalidates it.* A second consumer of the events (another product, an analysis notebook),
+  volume a synchronous insert can't keep up with, or a need to replay history → revisit
+  toward a queue between the systems (ADR-010's own invalidator) with Largata keeping the
+  canonical log and worklog a projection of it. Wanting worklog to *reason* about kinds — a
+  bespoke tile layout with per-kind semantics — is a vocabulary, and belongs at the Largata
+  edge as agreed names, never parsed here (ADR-013's posture).
+  **Read side (added 2026-10-05):** count-on-read re-reads every Snapshot ever stored on each
+  summary request (≈8,760 a year at the hourly cadence, every 30 s per open screen). When
+  `GET /api/dashboard/summary` p95 passes **300 ms**, or `largata_events` passes **1 million
+  rows**, move the figures to rollups maintained on write (per-counter running totals, per-day
+  counts) and keep the log as their source of truth. Until a signal fires, the simple read
+  stays — a read-side trigger noticed, not a slowdown discovered.
+
 **Deferred (until validated).** Caching, read replicas, async/queues, rate limiting,
 real observability — explicitly **not** decided now; revisit signal-driven post-validation.

@@ -113,6 +113,33 @@ export function activityLabel(
   return { verb: edited ? 'edited' : 'logged', when: whenLabel(ref, now) };
 }
 
+// "just now" · "12m ago" · "3h ago" on the viewer's own day, else "Sep 21" — for any instant,
+// e.g. when the Dashboard's numbers were fetched or when Largata last sent a Snapshot.
+export function relativeWhen(iso: string, now: Date = new Date()): string {
+  return whenLabel(new Date(iso), now);
+}
+
+// "2:05 PM" or "14:05", as the viewer's device writes a time — the time half of an instant,
+// for freshness lines.
+export function clockTime(iso: string): string {
+  const d = new Date(iso);
+  try {
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  } catch {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+}
+
+// "2:05 PM" when the instant is on the viewer's own day, else "Sep 21, 2:05 PM" — so a time
+// from two days ago can never be read as today's (e.g. "silent since 11:31 AM").
+export function clockTimeOrDate(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  if (isSameDay(d, now)) return clockTime(iso);
+  const day = `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+  const dated = d.getFullYear() === now.getFullYear() ? day : `${day}, ${d.getFullYear()}`;
+  return `${dated}, ${clockTime(iso)}`;
+}
+
 // Relative on the viewer's own day, else the absolute date. `ref` and `now` are compared via local
 // Date accessors (isSameDay), so "same day" means the same day for whoever is looking. `ref` is a
 // real instant — its LOCAL date is legitimately viewer-relative here (it describes the log/edit

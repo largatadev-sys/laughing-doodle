@@ -40,6 +40,11 @@ export const colors = {
   cardBorder: palette.cardBorder,
 
   danger: palette.red, // destructive == brand red here (delete)
+
+  // Overlays — white at fixed strengths, for chrome over content and text on brand red.
+  surfaceTranslucent: 'rgba(255,255,255,0.92)', // floating nav-style headers
+  onBrandMuted: 'rgba(255,255,255,0.85)', // secondary text on a red card
+  onBrandDecor: 'rgba(255,255,255,0.10)', // decorative shapes on a red card
 } as const;
 
 // People are the only colourful thing in the UI. Bright, friendly, paper-legible —

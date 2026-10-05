@@ -33,6 +33,22 @@ export const shadow = {
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
+  // A red card lifted off the page (the Dashboard's hero) — the floating shadow, softer.
+  hero: {
+    shadowColor: '#F5333F',
+    shadowOpacity: 0.28,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  // The selected segment of a segmented control.
+  segment: {
+    shadowColor: '#1A1A1E',
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
   floating: {
     shadowColor: '#D62330',
     shadowOpacity: 0.28,

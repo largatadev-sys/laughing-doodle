@@ -14,7 +14,7 @@ invariants — so they are written here, once, authoritatively.
 - **Entry date** — the day the work was *done* (distinct from when the row was written).
 - **Shared visibility** — every Member can read every TimeEntry; writes are author-only.
 
-### Incoming feedback (Reports) — `[SETTLED 2026-08-13 · AMENDED 2026-08-28 · 2026-08-29]`
+### Incoming feedback (Reports) — `[SETTLED 2026-08-13 · AMENDED 2026-08-28 · 2026-08-29 · 2026-09-24]`
 
 _Design closed 2026-08-13 (grilling → spec: `docs/tickets/reports-inbox/spec.md`;
 architecture: ADR-010). A Report is **about the Largata trip-planning app** (the sibling
@@ -23,7 +23,7 @@ product), never about worklog itself._
 - **Report** — one piece of feedback from a Largata user: a `type` (**problem** — "something's
   wrong" — or **idea** — "I have a suggestion"), free text, optional screenshot(s), and the
   reporter's identity carried as **data**.
-- **Reporter** — the Largata user who filed a Report. **Foreign to worklog:** never a worklog
+- **Reporter** — the Traveler who filed a Report (2026-09-24: **Traveler** is defined below). **Foreign to worklog:** never a worklog
   User, never authenticates here — their name/UID travel as fields on the Report. Keeps the
   two user bases fully separate. **May be absent** (2026-08-28, contract v1.1): a Report
   filed from a signed-out Largata screen carries no identity at all, and the Inbox says so
@@ -60,6 +60,35 @@ product), never about worklog itself._
 - **The relay** — a Report reaches worklog only via Largata's backend, server-to-server,
   authenticated by a shared secret. Reporters are fire-and-forget: no status ever flows
   back to them in v1.
+
+### Largata usage (Events & the Dashboard) — `[SETTLED 2026-09-24]`
+
+_Design closed 2026-09-24 (`/grill-with-docs` session 2026-09-23/24; architecture:
+ADR-014). Worklog shows **how Largata is being used**, live, beside the feedback it already
+receives. Worklog counts; it never defines what Largata's things are._
+
+- **Traveler** — a Largata user: the person Largata exists for. **Foreign to worklog:** never
+  a worklog User, never authenticates here — a Traveler passes through worklog only as
+  opaque identity carried on a Report or an Event, the same identity in both. *Not* user,
+  account, customer. (A **Reporter** is a Traveler who filed a Report.)
+- **Event** — one fact about Largata usage, as Largata chooses to report it: a **kind**
+  (what happened — an opaque, Largata-minted name), optionally the Traveler it concerns,
+  and when it happened. Worklog never decides which kinds exist or what they mean; it
+  stores every Event forever and **counts** them. An Event is **never a Report**: it has no
+  status, no Notes, nothing for a Member to do, and never appears in the Inbox. *Not*
+  signal, metric, log entry, analytics event.
+- **Snapshot** — a distinguished kind of Event in which Largata states its **own running
+  totals**. The totals worklog shows re-base on the latest Snapshot (so a missed Event is
+  wrong for at most one interval), and a Snapshot's *absence* is how worklog knows Largata
+  has gone quiet. Expected hourly.
+- **Active** — a Traveler named as the doer of at least one Event on the viewer's calendar
+  day. What counts as doing something is Largata's definition (an Event names a Traveler
+  only when they acted); worklog only counts **distinct** Travelers per day.
+- **Dashboard** — the worklog surface showing Largata's usage live: Travelers active today,
+  running totals, and counts per day / month / year — every figure derived from Events,
+  every kind rendered as it arrives. Reached from the Inbox, not a tab of its own.
+  Read-only: no owner, no actions, and every Member sees the same thing. *Not*
+  observability view, analytics, stats page.
 
 ## High-level flow (the journey — narrative, not screens)
 

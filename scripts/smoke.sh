@@ -41,6 +41,16 @@ intake(){ code -X POST "$BASE/api/intake/reports" -H 'Content-Type: multipart/fo
 [ "$(code "$BASE/api/reports" -H 'X-Intake-Secret: not-the-secret')" = 401 ] \
   && ok "intake secret does not open /api/reports" || no "auth schemes bleed"
 
+echo "-- Largata usage (Events intake + Dashboard, ADR-014) --"
+# Rejection paths only, as above: a happy-path probe would write junk Events into the live
+# log (which has no delete). A 401 here proves the route is wired into the intake chain; that
+# the migration ran is proven only by the Dashboard rendering after a real login.
+events(){ code -X POST "$BASE/api/intake/events" -H 'Content-Type: application/json' -d '{"events":[]}' "$@"; }
+[ "$(events)" = 401 ] && ok "POST /api/intake/events no secret -> 401" || no "events intake unauth boundary" "$(events)"
+[ "$(code "$BASE/api/dashboard/summary")" = 401 ] && ok "GET /api/dashboard/summary no token -> 401" || no "dashboard 401 boundary"
+[ "$(code "$BASE/api/dashboard/summary" -H 'X-Intake-Secret: not-the-secret')" = 401 ] \
+  && ok "intake secret does not open /api/dashboard" || no "auth schemes bleed (dashboard)"
+
 echo "-- CORS behind TLS proxy (the trap that reached prod) --"
 # A same-origin browser POST carries an Origin header. Behind a proxy that terminates TLS,
 # the app must honor X-Forwarded-Proto to recognize it as same-origin (else -> 403 CORS).

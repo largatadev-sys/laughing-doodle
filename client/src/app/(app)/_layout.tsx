@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 
+import { DashboardProvider } from '@/lib/dashboard';
 import { ReportsProvider } from '@/lib/reports';
 import { colors } from '@/theme';
 
@@ -10,6 +11,9 @@ export default function AppLayout() {
     // The inbox fetch lives above the tabs: the Reports badge has to be live on every
     // authenticated screen, not only once the Inbox tab has been opened.
     <ReportsProvider>
+      {/* One Largata-usage fetch for the Reports-tab strip and the Dashboard screen. It never
+          polls on its own — whichever of the two is focused drives it. */}
+      <DashboardProvider>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -28,7 +32,10 @@ export default function AppLayout() {
         <Stack.Screen name="day/[date]" options={{ animation: 'ios_from_right' }} />
         {/* A report opens one level down from the inbox — the same drill-in as a day. */}
         <Stack.Screen name="report/[id]" options={{ animation: 'ios_from_right' }} />
+        {/* The Dashboard is one level down from the Reports tab's strip — the same drill-in. */}
+        <Stack.Screen name="dashboard" options={{ animation: 'ios_from_right' }} />
       </Stack>
+      </DashboardProvider>
     </ReportsProvider>
   );
 }
