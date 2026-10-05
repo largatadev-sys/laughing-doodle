@@ -3,14 +3,14 @@
 How the engineering skills should consume this repo's domain documentation when
 exploring the codebase.
 
-**This repo does not use the generic `CONTEXT.md` / `docs/adr/` layout.** It already has
+**This repo does not use the generic `GLOSSARY.md` / `docs/adr/` layout.** It already has
 a curated, production-depth context package that `CLAUDE.md` points at directly — use
 that instead of creating a parallel structure.
 
 ## Before exploring, read these
 
 - **[docs/design/02-domain-model.md](../design/02-domain-model.md)** — the glossary
-  (ubiquitous language), entities, aggregates, and invariants. This is the `CONTEXT.md`
+  (ubiquitous language), entities, aggregates, and invariants. This is the `GLOSSARY.md`
   equivalent.
 - **[docs/design/04-architecture.md](../design/04-architecture.md)** — the ADR log lives
   inline in this file's `## ADR log` section, not as one-file-per-decision under
@@ -27,7 +27,7 @@ that instead of creating a parallel structure.
   planned. Check this before assuming a story has landed.
 
 If any of these files don't exist yet for a given area, proceed silently — don't flag
-their absence or suggest creating `CONTEXT.md`/`docs/adr/` instead. `/grill-with-docs`
+their absence or suggest creating `GLOSSARY.md`/`docs/adr/` instead. `/grill-with-docs`
 extends `docs/design/` and writes new `docs/plans/story-N-*.md` files lazily as terms and
 decisions actually get resolved.
 
@@ -39,7 +39,7 @@ decisions actually get resolved.
 ├── BUILD_STATUS.md                    ← live build status
 └── docs/
     ├── design/                        ← the context package (glossary, ADRs, decisions)
-    │   ├── 02-domain-model.md         ← glossary + invariants (the CONTEXT.md equivalent)
+    │   ├── 02-domain-model.md         ← glossary + invariants (the GLOSSARY.md equivalent)
     │   ├── 04-architecture.md         ← ADR log (the docs/adr/ equivalent)
     │   └── 06b-engineering-decisions.md
     ├── plans/                         ← per-story decision logs (story-N-*.md)
@@ -47,7 +47,7 @@ decisions actually get resolved.
 ```
 
 Single-context: this is a small solo backend + client repo, not a monorepo — no
-`CONTEXT-MAP.md`/multi-context split applies.
+`GLOSSARY-MAP.md`/multi-context split applies.
 
 ## Use the glossary's vocabulary
 

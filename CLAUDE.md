@@ -51,7 +51,7 @@ Defaults kept as-is (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for
 ### Domain docs
 
 Single-context; the existing `docs/design/` package (02-domain-model.md, 04-architecture.md's
-ADR log) stands in for the generic `CONTEXT.md`/`docs/adr/` layout — no parallel structure.
+ADR log) stands in for the generic `GLOSSARY.md`/`docs/adr/` layout — no parallel structure.
 See [docs/agents/domain.md](docs/agents/domain.md).
 
 ## Stop rules (ask before doing)
