@@ -371,15 +371,15 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 
 | #   | Story (= ticket)                                             | Status | Ticket |
 | --- | ------------------------------------------------------------ | ------ | ------ |
-| 22  | Prefactor: the Inbox's focused polling becomes a shared hook   | ✅ (branch) | [01](docs/tickets/largata-dashboard/issues/01-focused-polling-hook.md) · `f71c025` |
-| 23  | Events land: intake route, table, per-Event verdicts          | ✅ (branch) | [02](docs/tickets/largata-dashboard/issues/02-events-land-intake.md) · `0dd3988` |
-| 24  | Summary read: active today, totals, freshness                 | ✅ (branch) | [03](docs/tickets/largata-dashboard/issues/03-summary-read.md) · `d7fa26c` |
-| 25  | Reports tab strip + Dashboard screen                          | ✅ (branch) | [04](docs/tickets/largata-dashboard/issues/04-reports-strip-and-dashboard-screen.md) · `b921f4f` |
-| 26  | Series: counts per day / month / year (+ design v2 screen)    | ✅ (branch) | [05](docs/tickets/largata-dashboard/issues/05-series-day-month-year.md) · `7320921` `ac45077` `e8d2132` |
+| 22  | Prefactor: the Inbox's focused polling becomes a shared hook   | ✅ (dev) | [01](docs/tickets/largata-dashboard/issues/01-focused-polling-hook.md) · `2d9eb41` |
+| 23  | Events land: intake route, table, per-Event verdicts          | ✅ (dev) | [02](docs/tickets/largata-dashboard/issues/02-events-land-intake.md) · `2d9eb41` |
+| 24  | Summary read: active today, totals, freshness                 | ✅ (dev) | [03](docs/tickets/largata-dashboard/issues/03-summary-read.md) · `2d9eb41` |
+| 25  | Reports tab strip + Dashboard screen                          | ✅ (dev) | [04](docs/tickets/largata-dashboard/issues/04-reports-strip-and-dashboard-screen.md) · `2d9eb41` |
+| 26  | Series: counts per day / month / year (+ design v2 screen)    | ✅ (dev) | [05](docs/tickets/largata-dashboard/issues/05-series-day-month-year.md) · `2d9eb41` |
 | 27  | Ship: smoke probe, env note, tracker rows, deploy, live check | 🔄     | [06](docs/tickets/largata-dashboard/issues/06-ship-smoke-env-deploy.md) |
 
-**State 2026-09-24:** Stories 22–26 built on `feature/largata-dashboard-planning` (SHAs above
-are branch commits; they become one squash commit on `dev`). Backend contract tests at the
+**State 2026-09-24:** Stories 22–26 built on `feature/largata-dashboard-planning` (squashed onto `dev` 2026-10-05 as `2d9eb41`; the branch SHAs
+no longer apply). Backend contract tests at the
 API seam: intake 18, summary 15, series 12, active 8. Verified live locally: `bootRun`
 against the compose Postgres applied V8; `scripts/send-sample-events.sh` → verdicts, replay →
 all `duplicate`; the summary matched hand-computed numbers; a headless-browser drive of
