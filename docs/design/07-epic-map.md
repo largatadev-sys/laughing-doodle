@@ -297,7 +297,8 @@ blockers-first:
   button, for fixing outside worklog. Handoffs list; started from the nav bar's centre disc
   on the Reports tab. Web only.
   New `handoffs` module and two tables (signed off 2026-10-07)
-  ([spec](../tickets/story-28-report-handoff/spec.md)). Scoped 2026-10-07.
+  ([spec](../tickets/story-28-report-handoff/spec.md)). Scoped and shipped 2026-10-07 (dev + prod,
+  live-checked).
 
 Stories 13–18 shipped 2026-08-14 (deployed to dev + prod). Status of record:
 [BUILD_STATUS](../../BUILD_STATUS.md).
