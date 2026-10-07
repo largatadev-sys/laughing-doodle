@@ -125,7 +125,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 19  | Intake contract v1.1: screen context + signed-out reporters  | ✅     | [07](docs/tickets/reports-inbox/issues/07-intake-contract-v1-1.md) |
 | 20  | Team notes + inbox clarity                                   | ✅     | [08](docs/tickets/reports-inbox/issues/08-report-notes-and-inbox-clarity.md) |
 | 21  | Intake contract v1.2: device context (os, browser, deviceModel) | ✅  | [01](docs/tickets/story-21-device-context/issues/01-intake-contract-v1-2-device-context.md) scoping · [02](docs/tickets/story-21-device-context/issues/02-device-context-tracer-bullet.md) tracer bullet (`de36d94`) · [03](docs/tickets/story-21-device-context/issues/03-ship-v1-2-freeze-deploy-handoff.md) ship |
-| 28  | Report Handoff: select, hand off, frozen text + Handoffs list  | 🔄 built on `feature/28-report-handoff`; live-checked by the developer (LAN, 2026-10-07); squash pending | [spec](docs/tickets/story-28-report-handoff/spec.md) · [01](docs/tickets/story-28-report-handoff/issues/01-tracer-bullet-hand-off-and-see-the-text.md) tracer bullet · [02](docs/tickets/story-28-report-handoff/issues/02-the-full-text-format.md) text format · [03](docs/tickets/story-28-report-handoff/issues/03-the-handoffs-list.md) list · [04](docs/tickets/story-28-report-handoff/issues/04-handed-off-on-each-report.md) on each Report (dropped) · [05](docs/tickets/story-28-report-handoff/issues/05-ship.md) ship |
+| 28  | Report Handoff: select, hand off, frozen text + Handoffs list  | ✅ (dev) | [spec](docs/tickets/story-28-report-handoff/spec.md) · [01](docs/tickets/story-28-report-handoff/issues/01-tracer-bullet-hand-off-and-see-the-text.md) tracer bullet · [02](docs/tickets/story-28-report-handoff/issues/02-the-full-text-format.md) text format · [03](docs/tickets/story-28-report-handoff/issues/03-the-handoffs-list.md) list · [04](docs/tickets/story-28-report-handoff/issues/04-handed-off-on-each-report.md) on each Report (dropped) · [05](docs/tickets/story-28-report-handoff/issues/05-ship.md) ship · `63d3c77` |
 
 **Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning` over 20 commits —
 the six tickets, then a second pass implementing the Claude Design package, then UI bug fixes —
@@ -360,7 +360,7 @@ built with `/implement-spec` on `feature/28-report-handoff`: ticket 01 alone, th
 parallel (one subagent per ticket in its own worktree, each merging back to the branch), then a
 three-axis `/code-review` (Standards · Spec · the new Java/Spring axis) with its findings fixed in
 one pass. The developer live-checked it over LAN on mobile web (2026-10-07, several rounds;
-changes made during the check are listed below). **Not yet squashed into `dev`.**
+changes made during the check are listed below). **Squashed into `dev` at `63d3c77`.**
 
 - **Backend.** New `handoffs` module, package-by-role like `dashboard/`, pinned by
   `HandoffsArchitectureTest` (repository/domain access, DTO layering, and no dependency on the
