@@ -8,7 +8,7 @@ Spec: [../spec.md](../spec.md).
 **Blocked by:** 02 — The full text format; 03 — The Handoffs list; 04 — "Handed off" on each
 Report.
 
-**Status:** in progress — squashed (`63d3c77`) and deployed to dev + prod 2026-10-07; awaiting the developer's live check on the deployed environments
+**Status:** done — shipped 2026-10-07 (`dev` and `main` at `dc45780`, squash `63d3c77`, smoke 16/16 on both); the developer live-checked dev and prod the same day.
 
 - [x] A live `bootRun` against the compose Postgres confirms V9 applied (both tables present) —
       the standing silent-Flyway lesson; the test suite alone does not count.
@@ -48,3 +48,5 @@ Report.
   pushed; dev went live in ~100 s, smoke 16/16. `main` fast-forwarded to `8cfd8e5` and pushed;
   prod went live in ~180 s serving the same bundle, smoke 16/16. V9 inferred applied (healthy
   boot); the developer's live check on dev and prod is the remaining step.
+
+- 2026-10-07 (close): the developer confirmed the live check on dev and prod ("all good").

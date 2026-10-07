@@ -125,7 +125,7 @@ Key: ⬜ not started · 🔄 in progress · ✅ done · ⚠ blocked
 | 19  | Intake contract v1.1: screen context + signed-out reporters  | ✅     | [07](docs/tickets/reports-inbox/issues/07-intake-contract-v1-1.md) |
 | 20  | Team notes + inbox clarity                                   | ✅     | [08](docs/tickets/reports-inbox/issues/08-report-notes-and-inbox-clarity.md) |
 | 21  | Intake contract v1.2: device context (os, browser, deviceModel) | ✅  | [01](docs/tickets/story-21-device-context/issues/01-intake-contract-v1-2-device-context.md) scoping · [02](docs/tickets/story-21-device-context/issues/02-device-context-tracer-bullet.md) tracer bullet (`de36d94`) · [03](docs/tickets/story-21-device-context/issues/03-ship-v1-2-freeze-deploy-handoff.md) ship |
-| 28  | Report Handoff: select, hand off, frozen text + Handoffs list  | 🔄 shipped to dev + prod, awaiting live check | [spec](docs/tickets/story-28-report-handoff/spec.md) · [01](docs/tickets/story-28-report-handoff/issues/01-tracer-bullet-hand-off-and-see-the-text.md) tracer bullet · [02](docs/tickets/story-28-report-handoff/issues/02-the-full-text-format.md) text format · [03](docs/tickets/story-28-report-handoff/issues/03-the-handoffs-list.md) list · [04](docs/tickets/story-28-report-handoff/issues/04-handed-off-on-each-report.md) on each Report (dropped) · [05](docs/tickets/story-28-report-handoff/issues/05-ship.md) ship · `63d3c77` |
+| 28  | Report Handoff: select, hand off, frozen text + Handoffs list  | ✅ (dev + main) | [spec](docs/tickets/story-28-report-handoff/spec.md) · [01](docs/tickets/story-28-report-handoff/issues/01-tracer-bullet-hand-off-and-see-the-text.md) tracer bullet · [02](docs/tickets/story-28-report-handoff/issues/02-the-full-text-format.md) text format · [03](docs/tickets/story-28-report-handoff/issues/03-the-handoffs-list.md) list · [04](docs/tickets/story-28-report-handoff/issues/04-handed-off-on-each-report.md) on each Report (dropped) · [05](docs/tickets/story-28-report-handoff/issues/05-ship.md) ship · `63d3c77` |
 
 **Stories 13–17 (2026-08-13/14):** built on `feature/reports-inbox-planning` over 20 commits —
 the six tickets, then a second pass implementing the Claude Design package, then UI bug fixes —
@@ -365,8 +365,7 @@ changes made during the check are listed below). **Squashed into `dev` at `63d3c
 `scripts/smoke.sh` 16/16 on <https://largata-ts-dev.up.railway.app> and on
 <https://worklog.largata.com>, including the Handoffs probes and the TLS-proxy CORS check. V9
 inferred applied on both (Flyway runs at boot and a failed migration stops the app; both are
-healthy) — not yet observed. **Automated checks pass; needs the developer's live check on
-each** (log in, open Handoffs: the list loading confirms V9).
+healthy). **The developer live-checked dev and prod the same day — done.**
 
 - **Backend.** New `handoffs` module, package-by-role like `dashboard/`, pinned by
   `HandoffsArchitectureTest` (repository/domain access, DTO layering, and no dependency on the
