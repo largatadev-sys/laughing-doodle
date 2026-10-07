@@ -8,7 +8,7 @@ Spec: [../spec.md](../spec.md).
 **Blocked by:** 02 — The full text format; 03 — The Handoffs list; 04 — "Handed off" on each
 Report.
 
-**Status:** in progress — live check done (2026-10-07); squash into `dev` pending
+**Status:** in progress — squashed (`63d3c77`) and deployed to dev + prod 2026-10-07; awaiting the developer's live check on the deployed environments
 
 - [x] A live `bootRun` against the compose Postgres confirms V9 applied (both tables present) —
       the standing silent-Flyway lesson; the test suite alone does not count.
@@ -20,11 +20,11 @@ Report.
 - [x] The developer's live check on the full local image in a real browser: the demos of
       tickets 01–04 run end to end. Reported as "automated checks pass; needs your live check"
       until the developer confirms.
-- [ ] BUILD_STATUS: Story 28's row updated (status, ticket links, squash commit), and the
+- [x] BUILD_STATUS: Story 28's row updated (status, ticket links, squash commit), and the
       skills-package re-sync that rides on this branch recorded in the off-epic ledger.
-- [ ] Squash-merged into `dev` with a fresh `feat(handoffs): …` message that also names the
+- [x] Squash-merged into `dev` with a fresh `feat(handoffs): …` message that also names the
       skills re-sync; the squash SHA fixed in BUILD_STATUS directly on `dev` afterwards.
-- [ ] Staged diff scanned for secrets before every commit.
+- [x] Staged diff scanned for secrets before every commit.
 
 ## Comments
 
@@ -43,3 +43,8 @@ Report.
   line and reports-read field, tab-header and tab-transition fixes, the animation-freeze fix)
   are recorded in the spec's Further Notes, ticket 01/04 comments and BUILD_STATUS. Remaining:
   BUILD_STATUS row + squash SHA, the squash into `dev`.
+
+- 2026-10-07 (ship): squashed into `dev` at `63d3c77` (SHA recorded on `dev` in `8cfd8e5`),
+  pushed; dev went live in ~100 s, smoke 16/16. `main` fast-forwarded to `8cfd8e5` and pushed;
+  prod went live in ~180 s serving the same bundle, smoke 16/16. V9 inferred applied (healthy
+  boot); the developer's live check on dev and prod is the remaining step.
