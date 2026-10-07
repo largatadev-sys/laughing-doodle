@@ -292,6 +292,13 @@ blockers-first:
   visible payoff needs the Largata-side session; every report filed before that stays
   blank on these fields forever.
 
+- **Story 28** — Report Handoff: select open Reports and hand them off; worklog records a
+  permanent Handoff (who, when, which Reports, the exact text) and shows the text with a Copy
+  button, for fixing outside worklog. Handoffs list; started from the nav bar's centre disc
+  on the Reports tab. Web only.
+  New `handoffs` module and two tables (signed off 2026-10-07)
+  ([spec](../tickets/story-28-report-handoff/spec.md)). Scoped 2026-10-07.
+
 Stories 13–18 shipped 2026-08-14 (deployed to dev + prod). Status of record:
 [BUILD_STATUS](../../BUILD_STATUS.md).
 

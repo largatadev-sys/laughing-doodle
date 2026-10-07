@@ -12,6 +12,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { noTextSelect, type PressState } from '@/components/ui/press';
 import { STATUS_EDGE, STATUS_LABELS, STATUS_ORDER } from '@/lib/reportStatus';
+import { startToEnd } from '@/lib/animation';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import type { ReportResponse, ReportStatus } from '@/lib/types';
 import { colors, fonts, radius, space, type } from '@/theme';
@@ -140,8 +141,7 @@ function Option({
       speed: 20,
       bounciness: 14,
     });
-    anim.start();
-    return () => anim.stop();
+    return startToEnd(anim, () => pickAnim.setValue(1));
   }, [picked, reduced, pickAnim]);
 
   // Overshoot on the way, settling a touch larger than it started — the dot reads as "taken".

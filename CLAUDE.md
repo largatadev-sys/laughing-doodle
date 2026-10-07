@@ -54,6 +54,13 @@ Single-context; the existing `docs/design/` package (02-domain-model.md, 04-arch
 ADR log) stands in for the generic `GLOSSARY.md`/`docs/adr/` layout — no parallel structure.
 See [docs/agents/domain.md](docs/agents/domain.md).
 
+### Code review
+
+`/code-review` runs a **third axis** beside Standards and Spec: a Java/Spring checklist fitted
+to this repo, applied to backend changes only, as its own parallel sub-agent reported under
+its own heading. See [docs/agents/code-review-java-spring.md](docs/agents/code-review-java-spring.md).
+The skill file itself is upstream-synced, so the axis lives here, not in the skill.
+
 ## Stop rules (ask before doing)
 
 Ask the developer before: schema/migration changes · anything touching auth or the JWT

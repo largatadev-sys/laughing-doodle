@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { noTextSelect, type PressState } from '@/components/ui/press';
 import { clockTimeOrDate, relativeWhen } from '@/lib/datetime';
 import type { DashboardSummary } from '@/lib/types';
+import { startToEnd } from '@/lib/animation';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { colors, fonts, radius, space, type } from '@/theme';
 
@@ -102,8 +103,8 @@ function LiveDot() {
         Animated.timing(opacity, { toValue: 1, ...half }),
       ]),
     );
-    loop.start();
-    return () => loop.stop();
+    // A loop never finishes; if it is stopped by being covered, rest the dot fully lit.
+    return startToEnd(loop, () => opacity.setValue(1));
   }, [reduced, opacity]);
   return <Animated.View style={[styles.statusDot, { opacity }]} />;
 }

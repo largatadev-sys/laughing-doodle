@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Animated, type ViewStyle } from 'react-native';
 
+import { useScreenEntrance } from '@/components/nav/TabTransition';
+import { startToEnd } from '@/lib/animation';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 
 interface FadeInViewProps {
@@ -11,13 +13,17 @@ interface FadeInViewProps {
 }
 
 // The page-load atom: content fades up into place. Staggered by `delay`, it turns a screen
-// mount into one calm cascade rather than a hard cut. Skipped entirely under reduced motion.
+// mount into one calm cascade rather than a hard cut. Skipped entirely under reduced motion,
+// and inside a tab screen that arrived by a tab switch (the tab transition is that screen's
+// entrance; both at once read as a stutter, and only on first visits).
 export function FadeInView({ children, delay = 0, distance = 20, style }: FadeInViewProps) {
   const reduced = useReducedMotion();
-  const [progress] = useState(() => new Animated.Value(0));
+  const entrance = useScreenEntrance();
+  const still = reduced || !entrance;
+  const [progress] = useState(() => new Animated.Value(still ? 1 : 0));
 
   useEffect(() => {
-    if (reduced) {
+    if (still) {
       progress.setValue(1);
       return;
     }
@@ -27,9 +33,8 @@ export function FadeInView({ children, delay = 0, distance = 20, style }: FadeIn
       delay,
       useNativeDriver: true,
     });
-    anim.start();
-    return () => anim.stop();
-  }, [reduced, delay, progress]);
+    return startToEnd(anim, () => progress.setValue(1));
+  }, [still, delay, progress]);
 
   return (
     <Animated.View

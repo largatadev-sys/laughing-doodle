@@ -51,6 +51,16 @@ events(){ code -X POST "$BASE/api/intake/events" -H 'Content-Type: application/j
 [ "$(code "$BASE/api/dashboard/summary" -H 'X-Intake-Secret: not-the-secret')" = 401 ] \
   && ok "intake secret does not open /api/dashboard" || no "auth schemes bleed (dashboard)"
 
+echo "-- Report Handoffs (Story 28, ADR-015) --"
+# Rejection paths only, as above: a happy-path POST would record a permanent Handoff (no
+# delete route exists, by design). A 401 proves both routes sit behind the JWT chain; that the
+# V9 tables exist is proven by `\dt` against the gate's Postgres, not from here.
+[ "$(code "$BASE/api/handoffs")" = 401 ] && ok "GET /api/handoffs no token -> 401" || no "handoffs list 401 boundary"
+[ "$(code -X POST "$BASE/api/handoffs" -H 'Content-Type: application/json' -d '{"reportIds":[],"text":""}')" = 401 ] \
+  && ok "POST /api/handoffs no token -> 401" || no "handoffs create 401 boundary"
+[ "$(code "$BASE/api/handoffs" -H 'X-Intake-Secret: not-the-secret')" = 401 ] \
+  && ok "intake secret does not open /api/handoffs" || no "auth schemes bleed (handoffs)"
+
 echo "-- CORS behind TLS proxy (the trap that reached prod) --"
 # A same-origin browser POST carries an Origin header. Behind a proxy that terminates TLS,
 # the app must honor X-Forwarded-Proto to recognize it as same-origin (else -> 403 CORS).

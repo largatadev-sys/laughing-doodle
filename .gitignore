@@ -13,3 +13,6 @@
 .env.local
 *.env
 !.env.example
+
+# Claude Code agent worktrees (created by the harness for parallel subagents; never source)
+.claude/worktrees/

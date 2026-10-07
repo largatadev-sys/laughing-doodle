@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 
 import type { ChartSeries } from '@/lib/dashboard';
 import { bucketLabel } from '@/lib/dashboardFormat';
+import { startToEnd } from '@/lib/animation';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { colors, fonts, tabularNums, type } from '@/theme';
 
@@ -47,8 +48,7 @@ export function SeriesChart({
       easing: Easing.bezier(0.2, 0.7, 0.2, 1),
       useNativeDriver: true,
     });
-    anim.start();
-    return () => anim.stop();
+    return startToEnd(anim, () => grow.setValue(1));
   }, [key, reduced, grow]);
 
   return (

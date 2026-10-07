@@ -92,6 +92,15 @@ export interface ReportResponse {
   notes: ReportNote[];
 }
 
+/**
+ * One Handoff in full (Story 28): who handed which Reports off, when, and the exact text —
+ * frozen at creation, never edited. `reportIds` is in the order the text numbers them.
+ */
+export interface Handoff extends HandoffSummary {
+  text: string;
+  reportIds: string[];
+}
+
 export interface ErrorEnvelope {
   error: {
     code: string;
@@ -141,4 +150,16 @@ export interface ActiveSeries {
   bucket: SeriesBucket;
   zone: string;
   points: { start: string; active: number }[];
+}
+
+/**
+ * One row of the Handoffs list (Story 28): when, who and how many — never the text, which
+ * opening the Handoff fetches.
+ */
+export interface HandoffSummary {
+  id: string;
+  createdAt: string;
+  createdBy: number;
+  createdByName: string;
+  reportCount: number;
 }

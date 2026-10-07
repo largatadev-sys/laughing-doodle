@@ -1,18 +1,22 @@
 import { useCallback, useMemo, useState } from 'react';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
-import { AppHeader } from '@/components/AppHeader';
 import {
   ReportListEmpty,
   ReportListError,
   ReportListSkeleton,
 } from '@/components/ReportListStates';
 import { LargataStrip } from '@/components/dashboard/LargataStrip';
+import { useTabBarAction, useTabBarCenter } from '@/components/nav/TabBarAction';
 import { ReportRow } from '@/components/ReportRow';
 import { StatusSheet } from '@/components/StatusSheet';
 import { Card, Eyebrow, FadeInView, Scroll } from '@/components/ui';
 import { noTextSelect, type PressState } from '@/components/ui/press';
+import { apiClient, UnauthorizedError } from '@/lib/apiClient';
+import { useAuth } from '@/lib/auth';
+import { buildHandoffText } from '@/lib/handoffText';
 import { DASHBOARD_POLL_MS, useDashboard } from '@/lib/dashboard';
 import { useReports } from '@/lib/reports';
 import { useNow } from '@/lib/useNow';
@@ -41,6 +45,10 @@ const POLL_INTERVAL_MS = 60_000;
 // not where you land.
 const DEFAULT_OPEN_FILTER: ReportStatus = 'new';
 
+// Extra list padding while a hand-off error sits above the pill, so the last row can still
+// scroll clear of it. The action itself takes the pill's own place, so needs none.
+const HANDOFF_ERROR_CLEARANCE = 64;
+
 export default function ReportsInbox() {
   const { reports, error, refresh, refreshQuietly, changeStatus } = useReports();
   const [segment, setSegment] = useState<Segment>('open');
@@ -50,6 +58,13 @@ export default function ReportsInbox() {
   const [sheetFor, setSheetFor] = useState<ReportResponse | null>(null);
   const [saving, setSaving] = useState<ReportStatus | null>(null);
   const [writeError, setWriteError] = useState<string | null>(null);
+  // Hand-off selection (Story 28, web only for now). Ids, not rows, and independent of the
+  // chip filter: a Member can tick New and In-progress Reports across chips.
+  const { session, logout } = useAuth();
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
+  const [handingOff, setHandingOff] = useState(false);
+  const [handoffError, setHandoffError] = useState<string | null>(null);
 
   // Feedback lands while you are elsewhere in the app, so the inbox refetches on focus — and
   // then keeps itself current while you sit here, because a triage session can outlast the
@@ -85,10 +100,86 @@ export default function ReportsInbox() {
     return reports.filter((r) => r.status === segment);
   }, [reports, openReports, segment, narrow]);
 
+  // A polled refetch can move a ticked Report out of Open mid-selection; only the ones still
+  // open count, and only they are handed off.
+  const chosen = useMemo(
+    () => openReports.filter((r) => selected.has(r.id)),
+    [openReports, selected],
+  );
+
   function selectSegment(next: Segment) {
     setSegment(next);
     setNarrow(DEFAULT_OPEN_FILTER);
+    // Selection belongs to the Open view; leaving it is leaving the selection.
+    if (next !== 'open') cancelSelection();
   }
+
+  function startSelection() {
+    setSelected(new Set());
+    setHandoffError(null);
+    setSelecting(true);
+  }
+
+  function cancelSelection() {
+    setSelecting(false);
+    setSelected(new Set());
+    setHandoffError(null);
+  }
+
+  function toggle(report: ReportResponse) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(report.id)) next.delete(report.id);
+      else next.add(report.id);
+      return next;
+    });
+  }
+
+  // No confirmation: the deliberate act of selecting is the only step (spec, story 7).
+  async function handOff() {
+    if (!session || chosen.length === 0 || handingOff) return;
+    setHandingOff(true);
+    setHandoffError(null);
+    try {
+      const draft = buildHandoffText(chosen, session.user.name, new Date());
+      const handoff = await apiClient.createHandoff(draft.reportIds, draft.text, session.token);
+      cancelSelection();
+      router.push({ pathname: '/handoff/[id]', params: { id: handoff.id } });
+    } catch (e) {
+      if (e instanceof UnauthorizedError) return void logout();
+      // Nothing was recorded; the selection stays so a retry is one press.
+      setHandoffError(e instanceof Error ? e.message : 'Could not hand those reports off.');
+    } finally {
+      setHandingOff(false);
+    }
+  }
+
+  const canHandOff = Platform.OS === 'web' && segment === 'open';
+
+  // Hand off starts from the centre disc (web only, Open only): on this tab the disc's own job
+  // is this screen's action. Kept while selecting too, so cancelling lands back on it.
+  useTabBarCenter(
+    canHandOff ? { icon: 'send', label: 'Hand off reports', onPress: startSelection } : null,
+  );
+
+  // While ticking, the tab pill becomes the hand-off action: leaving the tab would only lose
+  // the selection, so the navigation's place goes to the one thing that finishes the task.
+  // It grows out of the centre disc that started it.
+  useTabBarAction(
+    selecting
+      ? {
+          label: `Hand off (${chosen.length})`,
+          icon: 'send',
+          onPress: handOff,
+          onCancel: cancelSelection,
+          cancelLabel: 'Cancel hand-off',
+          disabled: chosen.length === 0,
+          loading: handingOff,
+          error: handoffError,
+          origin: 'center',
+        }
+      : null,
+  );
 
   async function move(report: ReportResponse, status: ReportStatus) {
     if (status === report.status) {
@@ -113,18 +204,44 @@ export default function ReportsInbox() {
 
   return (
     <View style={styles.screen}>
-      <AppHeader />
-
       <Scroll
-        contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_CLEARANCE }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: TAB_BAR_CLEARANCE + (selecting && handoffError ? HANDOFF_ERROR_CLEARANCE : 0) },
+        ]}
         showsVerticalScrollIndicator={false}>
         <FadeInView>
           {/* 1b's header is compact — the eyebrow carries §6's "From Largata" provenance so
-              the source of this feedback stays stated, while the count replaces the subtitle. */}
+              the source of this feedback stays stated. The open count that sat beside the title
+              was dropped (2026-10-07): the status chips below already carry each count. */}
           <Eyebrow>From Largata</Eyebrow>
           <View style={styles.titleRow}>
             <Text style={styles.title}>Inbox</Text>
-            <Text style={styles.openCount}>{openReports.length} open</Text>
+            <View style={styles.titleSide}>
+              {/* Every past Handoff, to reopen and copy again — web only, like making one. While
+                  selecting it stays mounted but invisible and inert (the pill carries the
+                  action), so the header keeps its exact size and nothing below it jumps. */}
+              {Platform.OS === 'web' && (
+                <Pressable
+                  onPress={() => router.push('/handoffs')}
+                  disabled={selecting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Past handoffs"
+                  aria-hidden={selecting}
+                  accessibilityElementsHidden={selecting}
+                  importantForAccessibility={selecting ? 'no-hide-descendants' : 'auto'}
+                  style={({ pressed, hovered }: PressState) => [
+                    styles.handOffBtn,
+                    styles.handoffsBtn,
+                    hovered && styles.subChipHover,
+                    pressed && styles.subChipPressed,
+                    selecting && styles.headerBtnResting,
+                  ]}>
+                  <Feather name="clock" size={14} color={colors.text} />
+                  <Text style={styles.handoffsText}>Handoffs</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
         </FadeInView>
 
@@ -220,6 +337,11 @@ export default function ReportsInbox() {
                 <View style={i > 0 ? styles.divider : undefined}>
                   <ReportRow
                     report={report}
+                    selection={
+                      selecting
+                        ? { selected: selected.has(report.id), onToggle: toggle }
+                        : undefined
+                    }
                     onPress={(r) => router.push({ pathname: '/report/[id]', params: { id: r.id } })}
                     // A fresh sheet, not one still showing last attempt's failure.
                     onTriage={(r) => {
@@ -236,7 +358,11 @@ export default function ReportsInbox() {
         {visible.length > 0 && (
           /* The long-press is the only way to triage from this list and nothing on screen
              advertises it, so this hint is load-bearing rather than decorative. */
-          <Text style={styles.hint}>Tap to read · press and hold to move</Text>
+          <Text style={styles.hint}>
+            {selecting
+              ? 'Tap to tick the reports to hand off'
+              : 'Tap to read · press and hold to move'}
+          </Text>
         )}
       </Scroll>
 
@@ -266,8 +392,25 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: space.lg, paddingTop: space.lg, gap: space.md },
 
   titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  titleSide: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  handOffBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.brand,
+    backgroundColor: colors.surface,
+    cursor: 'pointer',
+    ...noTextSelect,
+  },
+  handoffsBtn: { borderColor: colors.cardBorder },
+  headerBtnResting: { opacity: 0, cursor: 'auto' },
+  handoffsText: { fontFamily: fonts.bold, fontSize: 12.5, color: colors.text },
+
   title: { ...type.display },
-  openCount: { ...type.caption, fontFamily: fonts.bold },
 
   segmented: {
     flexDirection: 'row',

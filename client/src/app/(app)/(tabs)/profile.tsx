@@ -3,7 +3,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-import { AppHeader } from '@/components/AppHeader';
 import { EntryCard } from '@/components/EntryCard';
 import { Avatar, Card, Eyebrow, FadeInView, Scroll, StatusPill } from '@/components/ui';
 import type { PressState } from '@/components/ui/press';
@@ -83,8 +82,6 @@ export default function Profile() {
 
   return (
     <View style={styles.screen}>
-      <AppHeader />
-
       <Scroll
         contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_CLEARANCE }]}
         showsVerticalScrollIndicator={false}>

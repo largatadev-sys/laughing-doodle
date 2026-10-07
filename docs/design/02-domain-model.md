@@ -20,7 +20,7 @@ _Design closed 2026-08-13 (grilling → spec: `docs/tickets/reports-inbox/spec.m
 architecture: ADR-010). A Report is **about the Largata trip-planning app** (the sibling
 product), never about worklog itself._
 
-- **Report** — one piece of feedback from a Largata user: a `type` (**problem** — "something's
+- **Report** — *Not* ticket or issue (2026-10-07: "ticket" is worklog's own planning doc). One piece of feedback from a Largata user: a `type` (**problem** — "something's
   wrong" — or **idea** — "I have a suggestion"), free text, optional screenshot(s), and the
   reporter's identity carried as **data**.
 - **Reporter** — the Traveler who filed a Report (2026-09-24: **Traveler** is defined below). **Foreign to worklog:** never a worklog
@@ -42,7 +42,8 @@ product), never about worklog itself._
   in the pill. Unlike TimeEntries, a Report has **no owner**: every Member reads and updates
   any Report equally.
 - **Report status** — `new` (arrived, untouched) · `discuss` (UI "For discussion" — parked
-  for a founders' decision) · `in progress` · `done` · `dismissed` (won't act). Free
+  for a founders' decision) · `in progress` (2026-10-07: **triaged and ready to fix** — its Notes
+  hold what a fix needs; it means the work *can* start, not that someone is on it now) · `done` · `dismissed` (won't act). Free
   movement between statuses, any Member; who-last-changed + when is recorded. No
   assignment, no deletion — Reports are kept forever. (2026-08-29: the original
   "no comments" rule is superseded by **Notes**, below; comments in the threaded,
@@ -54,6 +55,12 @@ product), never about worklog itself._
   signed testimony, so the same ownership rule INV-2 gives a time entry applies), always
   with a visible edited-at stamp. Never seen by the Reporter, never threaded — a Note is
   the team talking to its future self, not a conversation.
+- **Handoff** — the permanent record that a Member passed a chosen set of Reports out of
+  worklog to be fixed (2026-10-07): who, when, which Reports, and the exact text handed over,
+  frozen at that moment. Any Member sees every Handoff; none is ever deleted. A Handoff never
+  changes a Report or its status, and a Report does not show its Handoffs (dropped
+  2026-10-07); which Reports went out is recorded on the Handoff.
+  *Not* export (the act of copying), ticket, or batch.
 - **Screenshots** — optional, ≤3 per Report; the **bytes travel with the Report** through
   the relay (Largata's backend sanitizes/downsizes first) and **worklog owns its copy** —
   rendering the Inbox never depends on Largata being up.

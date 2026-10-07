@@ -4,6 +4,8 @@ import type {
   DashboardSeries,
   DashboardSummary,
   EntryResponse,
+  Handoff,
+  HandoffSummary,
   LoginResponse,
   ReportNote,
   ReportResponse,
@@ -168,6 +170,25 @@ export const apiClient = {
       body: { body },
       token,
     });
+  },
+
+  /** Records a Handoff. The text is stored exactly as sent; the creator is the token's, and
+   *  there is no edit or delete call because the API has no route for either. */
+  createHandoff(reportIds: string[], text: string, token: string): Promise<Handoff> {
+    return request<Handoff>('/api/handoffs', {
+      method: 'POST',
+      body: { reportIds, text },
+      token,
+    });
+  },
+
+  getHandoff(id: string, token: string): Promise<Handoff> {
+    return request<Handoff>(`/api/handoffs/${id}`, { token });
+  },
+
+  /** Every Handoff, newest first, as summaries — the text comes only with `getHandoff`. */
+  listHandoffs(token: string): Promise<HandoffSummary[]> {
+    return request<HandoffSummary[]>('/api/handoffs', { token });
   },
 
   editReportNote(

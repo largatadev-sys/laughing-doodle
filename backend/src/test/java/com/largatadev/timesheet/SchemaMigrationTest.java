@@ -57,6 +57,18 @@ class SchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void migrationCreatesHandoffTables() throws SQLException {
+		try (Connection conn = connect()) {
+			try (var rs = conn.getMetaData().getTables(null, null, "handoffs", null)) {
+				assertThat(rs.next()).as("handoffs table exists").isTrue();
+			}
+			try (var rs = conn.getMetaData().getTables(null, null, "handoff_reports", null)) {
+				assertThat(rs.next()).as("handoff_reports table exists").isTrue();
+			}
+		}
+	}
+
 	@ParameterizedTest
 	@ValueSource(ints = {0, -1})
 	void rejectsNonPositiveDurationMin(int durationMin) throws SQLException {

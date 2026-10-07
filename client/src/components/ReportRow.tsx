@@ -13,6 +13,9 @@ interface ReportRowProps {
   onPress: (report: ReportResponse) => void;
   /** Opens the full status sheet — the list's triage path, on long-press. */
   onTriage: (report: ReportResponse) => void;
+  /** Hand-off selection mode: a tap toggles the row instead of opening it, a checkbox leads
+   *  the row, and long-press triage is off. Absent, the row renders exactly as it always has. */
+  selection?: { selected: boolean; onToggle: (report: ReportResponse) => void };
 }
 
 /**
@@ -24,7 +27,7 @@ interface ReportRowProps {
  * covers phone and desktop. It is invisible by nature, which is why the list carries a hint
  * line spelling it out.
  */
-export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
+export function ReportRow({ report, onPress, onTriage, selection }: ReportRowProps) {
   const when = activityLabel(report.submittedAt, report.submittedAt).when;
   const shots = report.screenshotOrdinals.length;
   // "· 2 notes" tells you at a glance which reports the team has already reasoned about — the
@@ -37,10 +40,11 @@ export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
   return (
     <View style={styles.rowWrap}>
       <Pressable
-        onPress={() => onPress(report)}
-        onLongPress={() => onTriage(report)}
+        onPress={() => (selection ? selection.onToggle(report) : onPress(report))}
+        onLongPress={selection ? undefined : () => onTriage(report)}
         delayLongPress={400}
-        accessibilityRole="button"
+        accessibilityRole={selection ? 'checkbox' : 'button'}
+        accessibilityState={selection ? { checked: selection.selected } : undefined}
         accessibilityLabel={[
           report.type === 'problem' ? 'Problem' : 'Idea',
           `from ${reporter},`,
@@ -50,23 +54,38 @@ export function ReportRow({ report, onPress, onTriage }: ReportRowProps) {
         ].join(' ')}
         // Screen readers can't press-and-hold, so the triage path is exposed as a named action
         // rather than left as a gesture they have no way to perform.
-        accessibilityActions={[{ name: 'longpress', label: 'Move to another status' }]}
+        accessibilityActions={
+          selection ? undefined : [{ name: 'longpress', label: 'Move to another status' }]
+        }
         onAccessibilityAction={(e) => {
-          if (e.nativeEvent.actionName === 'longpress') onTriage(report);
+          if (!selection && e.nativeEvent.actionName === 'longpress') onTriage(report);
         }}
         style={({ pressed, hovered }: PressState) => [
           styles.row,
           hovered && styles.rowHovered,
           pressed && styles.rowPressed,
+          selection?.selected && styles.rowSelected,
         ]}>
         <View style={[styles.edge, { backgroundColor: STATUS_EDGE[report.status] }]} />
 
-        <Feather
-          name={TYPE_ICONS[report.type]}
-          size={16}
-          color={report.status === 'new' ? colors.brand : colors.textMuted}
-          style={styles.glyph}
-        />
+        {/* In selection mode the checkbox takes the type glyph's slot (same width), so the
+            row's text doesn't slide sideways when selection starts; the type is still in the
+            accessible label and in the hand-off text. */}
+        {selection ? (
+          <Feather
+            name={selection.selected ? 'check-square' : 'square'}
+            size={18}
+            color={selection.selected ? colors.brand : colors.textMuted}
+            style={styles.glyph}
+          />
+        ) : (
+          <Feather
+            name={TYPE_ICONS[report.type]}
+            size={16}
+            color={report.status === 'new' ? colors.brand : colors.textMuted}
+            style={styles.glyph}
+          />
+        )}
 
         <View style={styles.body}>
           {/* Two lines, ellipsized — enough of the report to triage from without opening it.
@@ -112,6 +131,7 @@ const styles = StyleSheet.create({
   },
   rowHovered: { backgroundColor: colors.brandSoft },
   rowPressed: { backgroundColor: colors.brandSoft },
+  rowSelected: { backgroundColor: colors.brandSoft },
 
   edge: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
   glyph: { width: 18 },

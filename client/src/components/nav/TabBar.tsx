@@ -1,10 +1,17 @@
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { TabTriggerSlotProps } from 'expo-router/ui';
 
+import { CenteredIcon } from '@/components/nav/CenteredIcon';
+import type { TabBarCenter } from '@/components/nav/TabBarAction';
+import { startToEnd } from '@/lib/animation';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { colors, fonts, radius, shadow, tabularNums } from '@/theme';
+
+// Where keyboard focus lands when the pill hands navigation back (see MorphingPill), so a
+// keyboard user ends up on the disc they started from.
+export const CENTER_DISC_ID = 'tab-center-disc';
 
 type TabButtonProps = TabTriggerSlotProps & {
   icon: keyof typeof Feather.glyphMap;
@@ -45,19 +52,11 @@ function Badge({ count }: { count: number }) {
   const [progress] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    const anim = Animated.spring(progress, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 14,
-      bounciness: 10,
-    });
-    if (reduced) {
-      // Fade only: no overshoot, nothing that reads as motion.
-      Animated.timing(progress, { toValue: 1, duration: 160, useNativeDriver: true }).start();
-    } else {
-      anim.start();
-    }
-    return () => anim.stop();
+    const anim = reduced
+      ? // Fade only: no overshoot, nothing that reads as motion.
+        Animated.timing(progress, { toValue: 1, duration: 160, useNativeDriver: true })
+      : Animated.spring(progress, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 10 });
+    return startToEnd(anim, () => progress.setValue(1));
   }, [reduced, progress]);
 
   return (
@@ -74,18 +73,88 @@ function Badge({ count }: { count: number }) {
   );
 }
 
-// The compose action — NOT a tab; it pushes the modal entry form. A white disc on the red
-// bar makes "log time" the anchor of the whole navigation.
-export function ComposeButton({ onPress }: { onPress: () => void }) {
+// The centre disc — NOT a tab. By default it is the compose action ("log time", pushing the
+// modal entry form): a white disc on the red bar makes it the anchor of the navigation. A tab
+// can lend it another action (TabBarCenter), e.g. Reports' "Hand off"; the glyphs trade places
+// with a quarter turn — the old one spins out and shrinks as the new one spins in and grows —
+// and the disc gives a small pop, so the change of job is noticed. Reduced motion: a crossfade.
+export const CENTER_DISC_SIZE = 52;
+
+export function CenterButton({
+  override,
+  onCompose,
+}: {
+  override: TabBarCenter | null;
+  onCompose: () => void;
+}) {
+  const reduced = useReducedMotion();
+  const swapped = override !== null;
+  const [swap] = useState(() => new Animated.Value(swapped ? 1 : 0));
+  const [pop] = useState(() => new Animated.Value(1));
+  // The override's glyph stays rendered while it spins back out after the override is gone.
+  const [overrideIcon, setOverrideIcon] = useState(override?.icon ?? 'send');
+  if (override && override.icon !== overrideIcon) setOverrideIcon(override.icon);
+  const settled = useRef(swapped);
+
+  useEffect(() => {
+    const toValue = swapped ? 1 : 0;
+    if (settled.current === swapped) {
+      // First mount (no entrance), or a re-run for another reason mid-animation: land cleanly.
+      swap.setValue(toValue);
+      pop.setValue(1);
+      return;
+    }
+    settled.current = swapped;
+    if (reduced) {
+      const fade = Animated.timing(swap, { toValue, duration: 140, useNativeDriver: true });
+      return startToEnd(fade, () => swap.setValue(toValue));
+    }
+    pop.setValue(0.86);
+    const anim = Animated.parallel([
+      Animated.spring(swap, { toValue, useNativeDriver: true, speed: 14, bounciness: 4 }),
+      Animated.spring(pop, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 14 }),
+    ]);
+    return startToEnd(anim, () => {
+      swap.setValue(toValue);
+      pop.setValue(1);
+    });
+  }, [swapped, reduced, swap, pop]);
+
+  const clamp = { extrapolate: 'clamp' as const };
+  const turn = (from: string, to: string) =>
+    reduced ? [] : [{ rotate: swap.interpolate({ inputRange: [0, 1], outputRange: [from, to] }) }];
+  const plusStyle = {
+    opacity: swap.interpolate({ inputRange: [0, 0.5], outputRange: [1, 0], ...clamp }),
+    transform: [
+      ...turn('0deg', '90deg'),
+      { scale: swap.interpolate({ inputRange: [0, 1], outputRange: [1, reduced ? 1 : 0.4], ...clamp }) },
+    ],
+  };
+  const overrideStyle = {
+    opacity: swap.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], ...clamp }),
+    transform: [
+      ...turn('-90deg', '0deg'),
+      { scale: swap.interpolate({ inputRange: [0, 1], outputRange: [reduced ? 1 : 0.4, 1], ...clamp }) },
+    ],
+  };
+
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel="Log time"
-      hitSlop={6}
-      style={({ pressed }) => [styles.compose, pressed && { transform: [{ scale: 0.92 }] }]}>
-      <Feather name="plus" size={26} color={colors.brand} />
-    </Pressable>
+    <Animated.View style={{ transform: [{ scale: pop }] }}>
+      <Pressable
+        onPress={override ? override.onPress : onCompose}
+        nativeID={CENTER_DISC_ID}
+        accessibilityRole="button"
+        accessibilityLabel={override ? override.label : 'Log time'}
+        hitSlop={6}
+        style={({ pressed }) => [styles.compose, pressed && { transform: [{ scale: 0.92 }] }]}>
+        <Animated.View style={[styles.glyph, plusStyle]} pointerEvents="none">
+          <CenteredIcon name="plus" size={26} color={colors.brand} />
+        </Animated.View>
+        <Animated.View style={[styles.glyph, overrideStyle]} pointerEvents="none">
+          <CenteredIcon name={overrideIcon} size={22} color={colors.brand} />
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -126,12 +195,13 @@ const styles = StyleSheet.create({
     fontVariant: tabularNums,
   },
   compose: {
-    width: 52,
-    height: 52,
+    width: CENTER_DISC_SIZE,
+    height: CENTER_DISC_SIZE,
     borderRadius: radius.pill,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadow.card,
   },
+  glyph: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
 });

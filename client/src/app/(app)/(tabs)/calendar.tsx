@@ -3,7 +3,6 @@ import { router, useFocusEffect } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-import { AppHeader } from '@/components/AppHeader';
 import { Eyebrow, FadeInView, Scroll, StackedTallyBar, TallyBar } from '@/components/ui';
 import type { PressState } from '@/components/ui/press';
 import { apiClient, UnauthorizedError } from '@/lib/apiClient';
@@ -120,8 +119,6 @@ export default function Calendar() {
 
   return (
     <View style={styles.screen}>
-      <AppHeader />
-
       <Scroll
         contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_CLEARANCE }]}
         showsVerticalScrollIndicator={false}>

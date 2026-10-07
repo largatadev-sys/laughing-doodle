@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Animated, View, type ViewStyle } from 'react-native';
 
+import { startToEnd } from '@/lib/animation';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { colors } from '@/theme';
 
@@ -45,8 +46,7 @@ export function TallyBar({
       delay,
       useNativeDriver: true,
     });
-    anim.start();
-    return () => anim.stop();
+    return startToEnd(anim, () => grow.setValue(1));
   }, [animate, reduced, pct, delay, grow]);
 
   return (

@@ -152,6 +152,10 @@ function whenLabel(ref: Date, now: Date): string {
     if (mins < 60) return `${mins}m ago`;
     return `${Math.floor(mins / 60)}h ago`; // same day ⇒ ≤ ~23h
   }
+  return dateOnly(ref, now);
+}
+
+function dateOnly(ref: Date, now: Date): string {
   const day = `${MONTHS[ref.getMonth()]} ${ref.getDate()}`;
   return ref.getFullYear() === now.getFullYear() ? day : `${day}, ${ref.getFullYear()}`;
 }

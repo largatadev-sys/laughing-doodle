@@ -354,5 +354,40 @@ on-demand full-stack parity gate. The fast native daily loop this ADR protects i
   counts) and keep the log as their source of truth. Until a signal fires, the simple read
   stays — a read-side trigger noticed, not a slowdown discovered.
 
+**ADR-015 — Report Handoff: the client writes the frozen text; the server stores it as given.**
+- *Context.* 2026-10-07, grilling closed the same day (`/grill-with-docs`; terms in
+  [02](02-domain-model.md)). A Member passes a chosen set of open Reports out of worklog to be
+  fixed elsewhere, and worklog keeps a permanent **Handoff**: who, when, which Reports, and the
+  exact text handed over. The text is a Markdown document assembled from Report fields and
+  Notes, meant to be pasted into another tool, never parsed back. Story 28.
+- *Decision.* **The client builds the text** — a pure formatter in `client/src/lib/handoffText.ts`,
+  no React dependency — from the Reports it already holds, and `POST /api/handoffs` **stores
+  the text byte for byte** beside the ordered Report ids. The server checks only what it can
+  own: the caller's identity (JWT), that every id names an existing Report, no duplicates,
+  non-blank text, and the size limits (200 Reports, 1,000,000 characters, 8 MB body). It never
+  regenerates, normalises or trims the text. Reading a Handoff later returns exactly what was
+  stored, so a Note edited afterwards changes nothing in it. The `handoffs` module checks
+  Report existence with a direct query against the `reports` table rather than through the
+  `reports` module, so `handoffs` never depends on the `reports` module's classes (pinned by
+  `HandoffsArchitectureTest`); accepted at the 2026-10-07 code review. (No module depends on
+  `handoffs` either: the reports read stopped embedding Handoffs on 2026-10-07.)
+- *Alternatives rejected.* (1) **Server-generated text** from the ids: one formatter testable
+  at the API seam, and a Handoff that could be re-rendered — but the server would then own a
+  presentation format whose only reader is a human pasting into another tool, and the
+  client would still need the same labels for its screens. (2) **Record on Copy, not on
+  "Hand off"**: fewer records, but no trace of a Handoff whose copy failed, and the record is
+  the point. (3) **A downloadable file**: the developer's first instinct; a page with a Copy
+  button removes the file-handling step and keeps the record in worklog.
+- *Consequences.* The formatter has **no automated tests** (06b: the client has no test
+  runner by decision); the live demo in ticket 05 checks the text byte for byte, and 06b
+  records that this change hits its date-math revisit trigger. The text reflects **the
+  client's loaded data at that moment** — a Note added between the inbox fetch and the press
+  is not in it. Two clients could in principle write differently formatted text for the same
+  Reports; today there is one client.
+- *Invalidates it.* A second writer or reader of the text (the native app, an API client,
+  a bot filing the Handoff somewhere) wanting the same bytes, or a need to re-render old
+  Handoffs in a new format → move the formatter server-side and make the stored text a
+  rendering of the ids. Until then the client-side formatter stays.
+
 **Deferred (until validated).** Caching, read replicas, async/queues, rate limiting,
 real observability — explicitly **not** decided now; revisit signal-driven post-validation.

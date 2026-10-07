@@ -34,6 +34,10 @@ export default function AppLayout() {
         <Stack.Screen name="report/[id]" options={{ animation: 'ios_from_right' }} />
         {/* The Dashboard is one level down from the Reports tab's strip — the same drill-in. */}
         <Stack.Screen name="dashboard" options={{ animation: 'ios_from_right' }} />
+        {/* A Handoff opens one level down from the inbox it was made in — the same drill-in. */}
+        <Stack.Screen name="handoff/[id]" options={{ animation: 'ios_from_right' }} />
+        {/* The Handoffs list is one level down from the Reports tab — the same drill-in. */}
+        <Stack.Screen name="handoffs" options={{ animation: 'ios_from_right' }} />
       </Stack>
       </DashboardProvider>
     </ReportsProvider>

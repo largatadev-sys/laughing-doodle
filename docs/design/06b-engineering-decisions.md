@@ -68,3 +68,8 @@ code review). The client has no test runner; its only real logic is display form
 than it protects; typecheck, lint and the developer's live check cover it. **Revisit** when the
 client gains logic whose failure the live check wouldn't show (date math, state machines,
 anything money- or permission-shaped).
+**Trigger hit, deferred (2026-10-07, Story 28):** `lib/handoffText.ts` (~200 lines) builds the
+Handoff text, including UTC date/minute formatting — date math by the sentence above. Kept
+untested for this story: the ticket-05 demo checks the output byte for byte against the spec,
+and adding a runner inside the story would widen its squash. A follow-up story may add a
+minimal runner for pure helpers only; if a second such helper lands first, that is the moment.
